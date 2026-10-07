@@ -20,3 +20,9 @@ _*.txt
 Thumbs.db
 .DS_Store
 desktop.ini
+
+# 在线发布包（由 测试版/.audit/build-online.mjs 生成）
+online/
+
+# 云服务/发布的应用标记（工作区本地状态，含本机绝对路径）
+.wbapp_*.genie

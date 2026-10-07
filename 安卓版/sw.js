@@ -8,14 +8,20 @@
      所以缓存策略不会碰数据，也不会出现「换了版本记录没了」。
    版本号改动 = 重新预热缓存 + 清掉旧缓存。v2：修掉手势收尾与双指降级后的
    外壳更新，老用户重开一次就会拿到新版本。
-   v3：卡片支持放多张图片（数据结构 img → imgs 数组）+ 新建分支会平滑腾地方。 */
-const VERSION = 'v3-20261007';
+   v3：卡片支持放多张图片（数据结构 img → imgs 数组）+ 新建分支会平滑腾地方。
+   v4：接入云同步（电脑和手机一个账号）——外壳多缓存一份 wbcloud-sdk.js，
+       断网时同步功能自己关掉，记录照旧存在本机。 */
+const VERSION = 'v4-20261007';
 const CACHE = 'branch-' + VERSION;
 
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './wbcloud-sdk.js',
+  './wbcloud-sdk.js',
+  './wbcloud-sdk.js',
+  './wbcloud-sdk.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/maskable-512.png',

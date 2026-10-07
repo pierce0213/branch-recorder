@@ -1072,6 +1072,25 @@ button,.pill,.bb,.tool,.ico-btn{touch-action:manipulation}
 @media(display-mode:standalone){
   #fsBtn{display:none}
 }
+
+/* =========================================================
+   云同步（底栏云朵按钮 + 登录面板）
+   ========================================================= */
+#cloudBtn{position:relative}
+#cloudDot{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;
+  background:var(--mute);opacity:.35;transition:opacity .18s,background .18s;pointer-events:none}
+#cloudBtn[data-st="busy"] #cloudDot{background:#dd8a00;opacity:1}
+#cloudBtn[data-st="ok"] #cloudDot{background:#12a150;opacity:1}
+#cloudBtn[data-st="err"] #cloudDot{background:#e04a42;opacity:1}
+#cloudBtn[data-st="anon"] #cloudDot{background:var(--mute);opacity:.75}
+.cs-in{width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--line2);
+  background:var(--surface-1);color:var(--txt);font-size:13px;font-family:inherit;
+  margin-bottom:9px;outline:none}
+.cs-in:focus{border-color:var(--blue)}
+.cs-msg{font-size:12px;color:var(--dim);min-height:16px;margin:0 0 9px}
+.cs-msg.err{color:#e04a42}
+.cs-kv{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);padding:3px 0}
+.cs-kv b{color:var(--txt);font-weight:600}
 </style>
 </head>
 <body>
@@ -1102,7 +1121,10 @@ button,.pill,.bb,.tool,.ico-btn{touch-action:manipulation}
     <span class="logo" title="每日分支记录器">
       <svg viewBox="0 0 16 16"><circle cx="4" cy="8" r="1.9"/><circle cx="12" cy="4" r="1.9"/><circle cx="12" cy="12" r="1.9"/><path d="M5.6 7.2 10.4 4.8M5.6 8.8l4.8 2.4"/></svg>
     </span>
-    <button class="ico-btn" id="backBtn" title="记录列表（切换日期）">
+    <button class="ico-btn" id="cloudBtn" data-st="off" title="云同步 · 电脑与手机共用一个账号">
+      <svg class="ico" viewBox="0 0 16 16"><path d="M4.8 12.2h6.5a2.5 2.5 0 0 0 .3-5 3.5 3.5 0 0 0-6.7-.8 2.8 2.8 0 0 0-.1 5.8z"/></svg>
+      <span id="cloudDot"></span>
+    </button>    <button class="ico-btn" id="backBtn" title="记录列表（切换日期）">
       <svg class="ico" viewBox="0 0 16 16"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg>
     </button>
     <input class="proj" id="projectInput" value="我的每日记录" spellcheck="false" title="点击改名">
@@ -3640,6 +3662,7 @@ function dayPanel(){
       + '<span style="display:flex;gap:8px">'
         + '<button class="btn sm" id="expBtn">导出</button>'
         + '<button class="btn sm" id="impBtn">导入</button>'
+        + '<button class="btn sm" id="cloudBtn2">云同步</button>'
       + '</span>'
       + '<span style="display:flex;gap:8px">'
         + '<button class="btn" id="todayGo">回到今天</button>'
@@ -3648,6 +3671,7 @@ function dayPanel(){
     + '</div>');
   document.getElementById('expBtn').onclick = exportPanel;
   document.getElementById('impBtn').onclick = importPanel;
+  document.getElementById('cloudBtn2').onclick = () => { closeModal(); cloudPanel(); };
   document.querySelectorAll('.day-row').forEach(r => r.onclick = () => {
     curDate = r.dataset.d; selId = null; closeModal(); render(); openView(); toast('已切换到 ' + curDate);
   });
@@ -4100,6 +4124,7 @@ const PAL_CMDS = [
   { id:'timeline', t:'时间轴', run:timelinePanel },
   { id:'stats', t:'今日统计', run:statsPanel },
   { id:'export', t:'导出 Markdown / OPML / 长图 / JSON', run:exportPanel },
+  { id:'cloud', t:'云同步 / 登录账号', run: cloudPanel },
   { id:'fit', t:'适应视图', run:() => fitView() },
   { id:'fit100', t:'回到 100%', k:'0', run:() => setZoom(1) }
 ];
@@ -4497,6 +4522,787 @@ function shiftDay(n){
   curDate = fmtDate(d); selId = null; render(); openView();
 }
 
+/* =========================================================
+   云同步 · 电脑 ↔ 手机共用一个账号
+   ---------------------------------------------------------
+   为什么这么设计：
+   · 数据按「天」分片存云端（day_books 一张表，每天一行）。
+     两台设备各推各改过的那天，A 在 10 号写、B 在 11 号写，
+     谁也碰不到谁，不会因为同步而互相覆盖。
+   · 冲突判定不用时间戳（两台设备的表不一定准），改成
+     「和上次同步时的指纹比」：只有一边变了就听那边，
+     两边都变了就留本机这份（另一份还在云端那行里）。
+   · 删除用墓碑（del）记录，否则「本机删掉、云端还在」的
+     节点下次同步会自己长回来。
+   · 没登录 / 断网 / 离线时一切照旧走本机存储，只是不同步。
+   ========================================================= */
+const CLOUD_CFG = {
+  /* 这两个值来自开通云服务时返回的 publicConfig，不要手改 */
+  endpoint: 'https://branch-recorder.app.workbuddy.host',
+  publishableKey: 'wbpk_Cv4QSaY9b8au6ATSb6YIZ0_RYXojhW9ilkTfwrupVVIBx46nbG5Irl4',
+  /* 云服务只认这一个线上地址（Origin 精确匹配）。这个字段只用来给用户指路，
+     不是请求目标；换域名时它必须跟着改，否则提示会把用户带沟里。 */
+  site: 'https://branch-recorder.app.workbuddy.host'
+};
+const SKEY = KEY + '-cloud';        /* 登录态之外只存「同步基线」，很小 */
+let cloudSdk = null;                /* SDK 实例；没加载出来就是 null */
+let cloudUser = null;               /* { id, email } */
+let cloudSt = { days:{}, dirty:[], at:0, metaAt:0 };
+let cloudNet = 'off';               /* off / busy / ok / err / anon */
+let cloudTimer = null, cloudSyncing = false, cloudPulling = false;
+let cloudLastErr = '';
+let cloudPending = false;           /* 有本地改动还没推上去 */
+const cloudDev = (window.matchMedia && matchMedia('(pointer:coarse)').matches) ? '手机' : '电脑';
+
+/* ---------- 同步基线的存取 ---------- */
+function cloudLoadSt(){
+  try{
+    const raw = lsGet(SKEY);
+    if(raw){
+      const o = JSON.parse(raw);
+      if(o && typeof o === 'object'){
+        cloudSt.days = o.days && typeof o.days === 'object' ? o.days : {};
+        cloudSt.dirty = Array.isArray(o.dirty) ? o.dirty : [];
+        cloudSt.pushBack = Array.isArray(o.pushBack) ? o.pushBack : [];
+        cloudSt.at = o.at || 0;
+        cloudSt.metaAt = o.metaAt || 0;
+      }
+    }
+  }catch(e){ /* 基线坏了就当作没同步过，顶多多拉一次 */ }
+}
+function cloudSaveSt(){ lsSet(SKEY, JSON.stringify(cloudSt)); }
+function cloudRec(dk){
+  let r = cloudSt.days[dk];
+  if(!r) r = cloudSt.days[dk] = { h:{}, dc:0, rev:0, at:'' };
+  if(!r.h) r.h = {};
+  return r;
+}
+
+/* 节点指纹：只用来判断「这一张卡片动没动过」，不参与展示 */
+function nodeHash(n){
+  let s;
+  try{ s = JSON.stringify(n); }catch(e){ s = String(n && n.id); }
+  let h = 5381;
+  for(let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return h;
+}
+function cloudDayHashes(d){
+  const h = {};
+  (d.nodes || []).forEach(n => { if(n && n.id) h[n.id] = nodeHash(n); });
+  return h;
+}
+function sameHashes(a, b){
+  const ka = Object.keys(a), kb = Object.keys(b);
+  if(ka.length !== kb.length) return false;
+  for(let i = 0; i < ka.length; i++){ if(a[ka[i]] !== b[ka[i]]) return false; }
+  return true;
+}
+
+/* 哪几天和上次同步不一样了 —— 每次同步前重算一遍，
+   这样不管改动是从哪条路径来的（编辑、导入、撤销、加图片）都漏不掉 */
+function cloudScanDirty(){
+  const dirty = [];
+  Object.keys(store.days).forEach(dk => {
+    const d = store.days[dk];
+    if(!d) return;
+    const ns = (d.nodes || []).filter(n => n && n.id);
+    const rec = cloudSt.days[dk];
+    if(!rec){
+      if(ns.length || (d.del || []).length) dirty.push(dk);
+      return;
+    }
+    if(!ns.length && !(d.del || []).length && !rec.at) return;
+    const h = cloudDayHashes(d);
+    if(!sameHashes(h, rec.h) || (d.del || []).length !== (rec.dc || 0)) dirty.push(dk);
+  });
+  /* 本机已经没有、但云端还留着的日期（整天空掉的情况） */
+  Object.keys(cloudSt.days).forEach(dk => {
+    if(!store.days[dk] && cloudSt.days[dk].at && dirty.indexOf(dk) === -1) dirty.push(dk);
+  });
+  cloudSt.dirty = dirty;
+  return dirty;
+}
+
+/* ---------- 合并一天的本地与云端 ---------- */
+function cloudMergeDay(local, remote, base, remoteAt){
+  const L = (local && Array.isArray(local.nodes)) ? local : { nodes:[], nextSeq:1 };
+  const R = (remote && Array.isArray(remote.nodes)) ? remote : { nodes:[], nextSeq:1 };
+  const lMap = {}, rMap = {};
+  L.nodes.forEach(n => { if(n && n.id) lMap[n.id] = n; });
+  R.nodes.forEach(n => { if(n && n.id) rMap[n.id] = n; });
+  const baseH = (base && base.h) || {};
+  const hasBase = !!(base && base.at);
+  /* 这一天云端是不是被别人动过：基线里的 updated_at 变了就说明动过。
+     没有基线（这台设备第一次连）时不当成「云端更新」——
+     本机这份才是用户刚在用的，同一天里两边都改过的卡片留本机的。 */
+  const preferRemote = hasBase && base.at !== remoteAt;
+  const keepMs = Date.now() - 90 * 86400000;
+
+  const delMap = {};
+  const addDel = (arr, src) => (arr || []).forEach(x => {
+    if(!x || !x.id || (x.t || 0) <= keepMs) return;
+    const cur = delMap[x.id];
+    if(!cur) delMap[x.id] = { id:x.id, t:x.t || 0, src:src };
+    else if((x.t || 0) > cur.t){ cur.t = x.t; cur.src = src; }
+  });
+  addDel(L.del, 'L');
+  addDel(R.del, 'R');
+
+  const out = { nodes:[], nextSeq: Math.max(L.nextSeq || 1, R.nextSeq || 1) };
+  const seen = {};
+  const ids = [];
+  L.nodes.forEach(n => { if(n && n.id && !seen[n.id]){ seen[n.id] = 1; ids.push(n.id); } });
+  R.nodes.forEach(n => { if(n && n.id && !seen[n.id]){ seen[n.id] = 1; ids.push(n.id); } });
+
+  let changed = false;
+  ids.forEach(id => {
+    const a = lMap[id], b = rMap[id];
+    const dd = delMap[id];
+    if(dd){
+      /* 判过死刑的节点：只有「本机在这次同步之后还改过它」（按了撤销之类）
+         才留得住，其余一律删掉，免得删了又长回来 */
+      const lc = !!(a && baseH[id] !== undefined && nodeHash(a) !== baseH[id]);
+      if(!(lc && dd.src === 'R')){ if(a) changed = true; return; }
+    }
+    let pick;
+    if(!a) pick = b;
+    else if(!b) pick = a;
+    else {
+      const hb = baseH[id];
+      const known = hb !== undefined;
+      const lc = known && nodeHash(a) !== hb;
+      const rc = known && nodeHash(b) !== hb;
+      if(lc && !rc) pick = a;
+      else if(rc && !lc) pick = b;
+      else if(lc && rc) pick = a;                 /* 两边都动过：留本机这份 */
+      else pick = (preferRemote && nodeHash(a) !== nodeHash(b)) ? b : a;   /* 都没动过 / 没有基线 */
+    }
+    if(!pick) return;
+    if(pick !== a) changed = true;
+    out.nodes.push(pick);
+  });
+  if(out.nodes.length !== L.nodes.length) changed = true;
+
+  /* 墓碑只留真的还删着的：活着的节点要把它的墓碑摘掉 */
+  const alive = {};
+  out.nodes.forEach(n => { alive[n.id] = 1; });
+  out.del = Object.keys(delMap).filter(id => !alive[id]).map(id => ({ id:id, t:delMap[id].t }));
+  if(out.del.length !== (L.del || []).length) changed = true;
+  if(out.nextSeq !== (L.nextSeq || 1)) changed = true;
+  /* 云端缺了本机有的东西（本机独有的卡片 / 只在本机的墓碑）：
+     云端那份要回推一次，否则「两边各加各的」会有一边永远收不到。 */
+  const remoteHas = {};
+  R.nodes.forEach(n => { if(n && n.id) remoteHas[n.id] = 1; });
+  let needPush = false;
+  out.nodes.forEach(n => { if(!remoteHas[n.id]) needPush = true; });
+  if(!needPush) out.del.forEach(d => { if(delMap[d.id] && delMap[d.id].src === 'L') needPush = true; });
+  return { day: out, changed: changed, needPush: needPush };
+}
+
+/* ---------- 上传 ---------- */
+/* 写一天：主路是一次 upsert（(owner_id, day) 上唯一），
+   万一 PostgREST 侧的冲突目标没对上，退回「先更新、没命中再插入」——
+   两条路都能把这一天写上去，不至于因为一个语法差异整条同步链断掉。 */
+function cloudWriteDay(dk, payload){
+  const row = { day: dk, payload: payload, device: cloudDev };
+  return cloudSdk.database.from('day_books')
+    .upsert(row, { onConflict: 'owner_id,day' })
+    .select('rev,updated_at')
+    .then(up => {
+      if(!up.error && Array.isArray(up.data) && up.data.length) return up;
+      return cloudSdk.database.from('day_books')
+        .update({ payload: payload, device: cloudDev })
+        .eq('day', dk)
+        .select('rev,updated_at')
+        .then(ud => {
+          if(ud.error) return ud;
+          if(Array.isArray(ud.data) && ud.data.length) return ud;
+          return cloudSdk.database.from('day_books').insert(row).select('rev,updated_at');
+        });
+    });
+}
+async function cloudPush(){
+  if(!cloudSdk || !cloudUser) return false;
+  const list = cloudSt.dirty.concat(cloudSt.pushBack).filter((v, i, a) => a.indexOf(v) === i);
+  if(!list.length) return true;
+  for(let i = 0; i < list.length; i++){
+    const dk = list[i];
+    const d = store.days[dk];
+    if(list.length > 1) cloudSetNet('busy', '正在上传 ' + (i + 1) + '/' + list.length + ' 天…');
+    try{
+      if(!d){
+        const r = await cloudSdk.database.from('day_books').delete().eq('day', dk);
+        if(r.error) throw r.error;
+      }else{
+        const payload = {
+          nodes: d.nodes || [],
+          nextSeq: d.nextSeq || 1,
+          del: (d.del || []).slice(-400)
+        };
+        const r = await cloudWriteDay(dk, payload);
+        if(r.error) throw r.error;
+        const row = Array.isArray(r.data) ? r.data[0] : r.data;
+        const rec = cloudRec(dk);
+        rec.h = cloudDayHashes(d);
+        rec.dc = (d.del || []).length;
+        if(row){ rec.rev = row.rev || 0; rec.at = row.updated_at || ''; }
+        else { rec.at = new Date().toISOString(); }
+      }
+    }catch(e){
+      cloudLastErr = (e && e.message) ? e.message : String(e);
+      return false;
+    }
+    cloudSt.dirty = cloudSt.dirty.filter(x => x !== dk);
+    cloudSt.pushBack = cloudSt.pushBack.filter(x => x !== dk);
+    cloudSaveSt();
+  }
+  cloudSaveSt();
+  return true;
+}
+
+/* ---------- 下载并合并 ---------- */
+async function cloudPull(){
+  if(!cloudSdk || !cloudUser) return false;
+  let rows;
+  try{
+    const r = await cloudSdk.database.from('day_books').select('day,payload,rev,updated_at');
+    if(r.error) throw r.error;
+    rows = Array.isArray(r.data) ? r.data : [];
+  }catch(e){
+    cloudLastErr = (e && e.message) ? e.message : String(e);
+    return false;
+  }
+  let changed = false;
+  const needBack = [];
+  cloudPulling = true;              /* 合并写回本机时不要再把自己标成「有改动」 */
+  try{
+    rows.forEach(row => {
+      if(!row || !row.day) return;
+      const dk = row.day;
+      const base = cloudSt.days[dk] || null;
+      const res = cloudMergeDay(store.days[dk] || null, row.payload || null, base, row.updated_at);
+      if(res.changed) changed = true;
+      if(res.needPush && needBack.indexOf(dk) === -1) needBack.push(dk);
+      store.days[dk] = res.day;
+      const rec = cloudRec(dk);
+      rec.h = cloudDayHashes(res.day);
+      rec.dc = (res.day.del || []).length;
+      rec.rev = row.rev || 0;
+      rec.at = row.updated_at || '';
+    });
+  }finally{
+    cloudPulling = false;
+  }
+  /* 项目名：第一次同步听云端的；之后本机改过就以本机为准 */
+  try{
+    const mr = await cloudSdk.database.from('app_meta').select('payload,updated_at').maybeSingle();
+    if(!mr.error && mr.data && mr.data.payload && mr.data.payload.projectName){
+      const rp = mr.data.payload.projectName;
+      if(rp !== store.projectName && (!cloudSt.metaAt || store.projectName === '我的每日记录')){
+        store.projectName = rp;
+        changed = true;
+      }
+    }
+  }catch(e){ /* 项目名同步失败无所谓，正文才是要紧的 */ }
+  cloudSt.metaAt = Date.now();
+  cloudSt.at = Date.now();
+  cloudSt.pushBack = needBack;
+  cloudSaveSt();
+  if(changed){
+    cloudRawSave();
+    pushHist();
+    render();
+    syncInspBtn();
+    drawMinimap();
+    const pi = document.getElementById('projectInput');
+    if(pi) pi.value = store.projectName || '我的每日记录';
+  }
+  return true;
+}
+
+/* ---------- 一次完整同步：先推后拉，越同步越一致 ---------- */
+async function cloudSync(opts){
+  const loud = !!(opts && opts.user);
+  if(!cloudSdk){
+    if(loud) toast(cloudSt.offlineHint || '云同步要用线上地址打开才能用');
+    return;
+  }
+  if(!cloudUser){
+    if(loud) cloudPanel();
+    return;
+  }
+  if(cloudSyncing) return;
+  cloudSyncing = true;
+  cloudLastErr = '';
+  cloudSetNet('busy', '正在同步…');
+  let ok = true;
+  try{
+    if(!cloudSt.at){
+      /* 这台设备第一次同步：先并云端已有的，再把自己这边的推上去，
+         不能反过来，否则本机那份会把云端别的时间点覆盖掉 */
+      ok = await cloudPull();
+      if(ok){ cloudScanDirty(); ok = await cloudPush(); }
+    }else{
+      cloudScanDirty();
+      ok = await cloudPush();
+      if(ok) ok = await cloudPull();
+      /* 拉的过程里发现云端缺了本机独有的卡片 → 再推一次，两边收敛到同一份 */
+      if(ok && cloudSt.pushBack.length) ok = await cloudPush();
+    }
+  }catch(e){
+    cloudLastErr = (e && e.message) ? e.message : String(e);
+    ok = false;
+  }
+  cloudSyncing = false;
+  cloudPending = false;
+  if(ok){
+    const t = new Date();
+    cloudSetNet('ok', '已同步 ' + String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0'));
+    if(loud) toast('同步完成');
+  }else{
+    cloudSetNet('err', '同步失败：' + (cloudLastErr || '网络不通'));
+    if(loud) toast('同步失败：' + (cloudLastErr || '稍后再试'));
+  }
+  if(cloudModalOpen()) cloudPanel();
+}
+function cloudSchedule(ms){
+  clearTimeout(cloudTimer);
+  if(!cloudUser) return;
+  cloudTimer = setTimeout(() => { cloudSync(); }, ms || 1800);
+}
+
+/* ---------- 状态灯 ---------- */
+function cloudSetNet(st, tip){
+  cloudNet = st;
+  const btn = document.getElementById('cloudBtn');
+  if(btn){
+    btn.dataset.st = st;
+    btn.title = '云同步 · ' + (tip || {
+      off:'离线：需要联网的线上地址', anon:'没登录，点这里登录', busy:'同步中…', ok:'已同步', err:'同步出错'
+    }[st] || '');
+  }
+}
+function cloudModalOpen(){
+  const m = document.getElementById('mask');
+  return !!(m && m.classList.contains('on') && document.getElementById('modal').dataset.v === 'cloud');
+}
+
+/* ---------- 登录界面 ---------- */
+let cloudAuth = { mode:'in', otp:false, step:'form', email:'', busy:false, msg:'', err:false, verId:'', existing:false };
+
+function cloudMsg(text, isErr){
+  cloudAuth.msg = text || '';
+  cloudAuth.err = !!isErr;
+  const el = document.getElementById('csMsg');
+  if(el){ el.textContent = cloudAuth.msg; el.className = 'cs-msg' + (isErr ? ' err' : ''); }
+}
+function cloudAuthErr(e){
+  const k = e && e.kind ? e.kind : '';
+  if(k === 'unauthenticated' || k === 'invalid_grant') return '邮箱或密码不对';
+  /* 云服务按 Origin 精确匹配，别的域名（含 GitHub Pages）一律 403 access_denied。
+     原样吐英文用户看不懂，这里换成「换个地址打开」。 */
+  if(k === 'permission-denied' || (e && e.status === 403))
+    return '这个地址不能用云同步，请用 ' + CLOUD_CFG.site + ' 打开再登录';
+  if(k === 'network' || k === 'backend-unavailable')
+    return (location.protocol === 'file:')
+      ? '本地文件连不上云服务，请用 ' + CLOUD_CFG.site + ' 打开再登录'
+      : '网络不太顺，过会儿再试';
+  return (e && e.message) ? e.message : '操作没成功，再试一次';
+}
+/* 当前页是不是云服务认的线上地址（file:// 双击打开的、别的域名都不算）。
+   本机 localhost 服务端是放行的（开发调试用），别误报。 */
+function cloudOnSite(){
+  try{
+    if(location.protocol !== 'https:' && location.protocol !== 'http:') return false;
+    const h = location.hostname;
+    if(h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === '[::1]') return true;
+    return h === new URL(CLOUD_CFG.site).hostname;
+  }catch(e){ return false; }
+}
+function cloudVal(id){
+  const el = document.getElementById(id);
+  return el ? String(el.value || '').trim() : '';
+}
+function cloudNeed(v, tip){
+  if(!v){ cloudMsg(tip, true); return false; }
+  return true;
+}
+
+function cloudPanel(){
+  const m = document.getElementById('modal');
+  if(!m) return;
+  if(!cloudSdk){
+    if(cloudSdkState === 'loading'){
+      openModal('<h3>云同步</h3><p>正在连接云服务…几秒后再点一下这个云朵按钮。</p>'
+        + '<div class="modal-foot"><button class="btn" onclick="closeModal()">好</button></div>');
+      m.dataset.v = 'cloud';
+      return;
+    }
+    openModal('<h3>云同步</h3>'
+      + '<p>云同步需要联网，而且要用线上地址打开这一页。'
+      + (location.protocol === 'file:' ? '你现在是直接双击本地文件打开的，浏览器不允许这种页面连服务器。' : '现在没连上服务器，检查一下网络。')
+      + '</p>'
+      + '<div class="sec" style="background:var(--surface-1)"><h4>本机记录一切正常</h4>'
+      + '<div style="font-size:12.5px;color:var(--dim)">没同步的时候，记录照样存在这台设备上，随时可以导出 JSON 备份。</div></div>'
+      + '<div class="modal-foot"><button class="btn" onclick="closeModal()">知道了</button></div>');
+    m.dataset.v = 'cloud';
+    return;
+  }
+  if(!cloudUser){
+    cloudPanelAuth();
+    m.dataset.v = 'cloud';
+    return;
+  }
+  const total = Object.keys(store.days).length;
+  const nodes = Object.keys(store.days).reduce((s, k) => s + (store.days[k].nodes || []).length, 0);
+  const when = cloudSt.at ? new Date(cloudSt.at).toLocaleString('zh-CN', { hour12:false }) : '还没同步过';
+  openModal('<h3>云同步</h3>'
+    + '<p>已登录 <b>' + esc(cloudUser.email || '') + '</b>。<br>'
+    + '记录按天存到云端，电脑和手机登录同一个账号就能互相看到；'
+    + '两台都开着的时候，改完一会儿会自动同步。</p>'
+    + '<div class="sec" style="background:var(--surface-1)">'
+      + '<h4>怎么合并</h4>'
+      + '<div style="font-size:12.5px;color:var(--dim);line-height:1.75">'
+      + '按天分开算，两台各推各改过的日子。<br>'
+      + '同一天里 <b>两台各自新建的卡片都会留下</b>。<br>'
+      + '同一张卡片两边都改过时，留你<b>当前这台设备</b>上的那版；'
+      + '第一次登录也是这个规矩（这台设备优先）。'
+      + '</div>'
+    + '</div>'
+    + '<div class="sec" style="background:var(--surface-1)">'
+      + '<h4>这台设备</h4>'
+      + '<div class="cs-kv"><span>本机记录</span><b>' + total + ' 天 · ' + nodes + ' 个分支</b></div>'
+      + '<div class="cs-kv"><span>上次同步</span><b>' + esc(when) + '</b></div>'
+      + '<div class="cs-kv"><span>待上传</span><b>' + (cloudPending || cloudScanDirty().length ? '有改动' : '无') + '</b></div>'
+    + '</div>'
+    + '<div class="cs-msg' + (cloudNet === 'err' ? ' err' : '') + '" id="csMsg">'
+      + (cloudNet === 'err' ? esc(cloudLastErr || '上次同步没成功') : '') + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:9px">'
+      + '<button class="btn pri" id="csNow" style="justify-content:center;padding:11px">立即同步</button>'
+      + '<button class="btn" id="csUp" style="justify-content:center;padding:11px">把本机全部记录传到云端</button>'
+      + '</div>'
+    + '<div class="modal-foot"><button class="btn" id="csOut">退出登录</button>'
+      + '<button class="btn pri" onclick="closeModal()">关闭</button></div>');
+  m.dataset.v = 'cloud';
+  document.getElementById('csNow').onclick = () => cloudSync({ user:true });
+  document.getElementById('csUp').onclick = () => {
+    cloudSt.days = {};
+    cloudSt.at = 0;
+    cloudSaveSt();
+    cloudMsg('正在把本机的记录都传上去…');
+    cloudSync({ user:true });
+  };
+  document.getElementById('csOut').onclick = () => {
+    cloudSdk.auth.signOut().then(() => {
+      cloudUser = null;
+      cloudSetNet('anon', '没登录');
+      toast('已退出登录，本机记录还在');
+      cloudPanel();
+    });
+  };
+}
+
+function cloudPanelAuth(){
+  const m = document.getElementById('modal');
+  const A = cloudAuth;
+  const tab = (k, t) => '<button data-a="' + k + '"' + (A.mode === k ? ' class="on"' : '') + '>' + t + '</button>';
+  let body = '';
+  if(A.mode === 'in'){
+    if(!A.otp){
+      body = '<input class="cs-in" id="csEmail" type="email" inputmode="email" autocomplete="email" placeholder="邮箱" value="' + esc(A.email) + '">'
+        + '<input class="cs-in" id="csPass" type="password" autocomplete="current-password" placeholder="密码">'
+        + '<div class="cs-msg' + (A.err ? ' err' : '') + '" id="csMsg">' + esc(A.msg) + '</div>'
+        + '<button class="btn pri" id="csGo" style="width:100%;justify-content:center;padding:11px">登录</button>'
+        + '<div style="display:flex;justify-content:space-between;margin-top:12px">'
+          + '<button class="btn sm" id="csUseOtp" style="background:none;border:none;color:var(--mute)">用邮箱验证码登录</button>'
+          + '<button class="btn sm" id="csForgot" style="background:none;border:none;color:var(--mute)">忘记密码</button>'
+        + '</div>';
+    }else{
+      body = '<input class="cs-in" id="csEmail" type="email" inputmode="email" autocomplete="email" placeholder="邮箱" value="' + esc(A.email) + '">'
+        + (A.step === 'code'
+            ? '<input class="cs-in" id="csCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6 位验证码">'
+            : '')
+        + '<div class="cs-msg' + (A.err ? ' err' : '') + '" id="csMsg">' + esc(A.msg) + '</div>'
+        + (A.step === 'code'
+            ? '<button class="btn pri" id="csGo" style="width:100%;justify-content:center;padding:11px">登录</button>'
+            : '<button class="btn pri" id="csGo" style="width:100%;justify-content:center;padding:11px">发送验证码</button>')
+        + '<div style="display:flex;justify-content:space-between;margin-top:12px">'
+          + '<button class="btn sm" id="csUsePwd" style="background:none;border:none;color:var(--mute)">用密码登录</button>'
+          + (A.step === 'code' ? '<button class="btn sm" id="csResend" style="background:none;border:none;color:var(--mute)">重新发送</button>' : '')
+        + '</div>';
+    }
+  }else if(A.mode === 'up'){
+    body = '<input class="cs-in" id="csEmail" type="email" inputmode="email" autocomplete="email" placeholder="邮箱" value="' + esc(A.email) + '">'
+      + (A.step === 'code'
+          ? '<input class="cs-in" id="csPass" type="password" autocomplete="new-password" placeholder="设置密码（至少 6 位）">'
+            + '<input class="cs-in" id="csCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="邮箱收到的 6 位验证码">'
+          : '')
+      + '<div class="cs-msg' + (A.err ? ' err' : '') + '" id="csMsg">' + esc(A.msg) + '</div>'
+      + '<button class="btn pri" id="csGo" style="width:100%;justify-content:center;padding:11px">'
+        + (A.step === 'code' ? '完成注册' : '发送验证码') + '</button>'
+      + '<div style="font-size:12px;color:var(--mute);margin-top:11px;line-height:1.6">'
+        + '注册后电脑和手机都用这个邮箱登录，记录就通了。'
+      + '</div>';
+  }else{
+    body = '<input class="cs-in" id="csEmail" type="email" inputmode="email" autocomplete="email" placeholder="注册时用的邮箱" value="' + esc(A.email) + '">'
+      + (A.step === 'code'
+          ? '<input class="cs-in" id="csCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="邮箱收到的 6 位验证码">'
+            + '<input class="cs-in" id="csPass" type="password" autocomplete="new-password" placeholder="新密码（至少 6 位）">'
+          : '')
+      + '<div class="cs-msg' + (A.err ? ' err' : '') + '" id="csMsg">' + esc(A.msg) + '</div>'
+      + '<button class="btn pri" id="csGo" style="width:100%;justify-content:center;padding:11px">'
+        + (A.step === 'code' ? '重设密码' : '发送验证码') + '</button>';
+  }
+  /* 不在官方线上地址上（双击本地文件 / 别的域名）就先说明白，
+     别让用户输完邮箱密码才看到一句英文报错。 */
+  const offsite = !cloudOnSite()
+    ? '<div class="sec" style="background:var(--danger-bg);border-color:transparent">'
+      + '<h4 style="color:var(--danger-fg)">这个地址登不上</h4>'
+      + '<div style="font-size:12.5px;color:var(--dim);line-height:1.7">'
+      + (location.protocol === 'file:'
+          ? '你现在是双击本地文件打开的，浏览器不允许这种页面连服务器。'
+          : '账号同步只认官方线上地址。')
+      + '<br>请用 <b>' + esc(CLOUD_CFG.site) + '</b> 打开再从云朵图标登录。<br>'
+      + '登录之前之后，本机的记录都不会丢。'
+      + '</div></div>'
+    : '';
+  openModal('<h3>云同步</h3>'
+    + '<p>用一个邮箱账号，电脑和手机就能共用同一份记录。'
+    + '没登录的时候，一切照旧存在本机。</p>'
+    + offsite
+    + '<div class="seg" style="margin-bottom:14px;width:100%">'
+      + tab('in', '登录') + tab('up', '注册') + tab('fg', '找回密码')
+    + '</div>'
+    + body
+    + '<div class="modal-foot"><button class="btn" onclick="closeModal()">以后再说</button></div>',
+    false);
+  m.dataset.v = 'cloud';
+  document.querySelectorAll('#modal .seg button').forEach(b => b.onclick = () => {
+    cloudAuth = { mode: b.dataset.a, otp:false, step:'form', email: cloudAuth.email, busy:false, msg:'', err:false, verId:'', existing:false };
+    cloudPanel();
+  });
+  const g = id => document.getElementById(id);
+  if(g('csUseOtp')) g('csUseOtp').onclick = () => { cloudAuth.otp = true; cloudAuth.step = 'form'; cloudMsg(''); cloudPanel(); };
+  if(g('csUsePwd')) g('csUsePwd').onclick = () => { cloudAuth.otp = false; cloudAuth.step = 'form'; cloudMsg(''); cloudPanel(); };
+  if(g('csForgot')) g('csForgot').onclick = () => { cloudAuth = { mode:'fg', step:'form', email: cloudAuth.email, msg:'' }; cloudPanel(); };
+  if(g('csResend')) g('csResend').onclick = () => { cloudAuth.step = 'form'; cloudMsg(''); cloudPanel(); };
+  if(g('csGo')) g('csGo').onclick = cloudAuthGo;
+  const em = g('csEmail');
+  if(em) em.focus();
+}
+
+async function cloudAuthGo(){
+  const A = cloudAuth;
+  const email = cloudVal('csEmail');
+  A.email = email;
+  if(!cloudNeed(email, '先填一下邮箱')) return;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return cloudMsg('邮箱格式看着不太对', true);
+  const btn = document.getElementById('csGo');
+  if(btn) btn.disabled = true;
+  cloudMsg('稍等一下…');
+  try{
+    if(A.mode === 'in' && !A.otp){
+      const pass = cloudVal('csPass');
+      if(!pass) return cloudMsg('填一下密码', true);
+      const r = await cloudSdk.auth.signInWithPassword({ email: email, password: pass });
+      if(r.error) return cloudMsg(cloudAuthErr(r.error), true);
+      return cloudAfterSignIn(r.data && r.data.user ? r.data.user : null);
+    }
+    if(A.mode === 'in' && A.otp){
+      if(A.step === 'form'){
+        const r = await cloudSdk.auth.signInWithOtp({ email: email });
+        if(r.error) return cloudMsg(cloudAuthErr(r.error), true);
+        A.step = 'code';
+        A._verify = r.data && r.data.verify;
+        return cloudPanel(), cloudMsg('验证码已发出，去邮箱里看一下');
+      }
+      const r = await A._verify({ token: cloudVal('csCode') });
+      if(r.error) return cloudMsg(cloudAuthErr(r.error), true);
+      return cloudAfterSignIn(r.data && r.data.user ? r.data.user : null);
+    }
+    if(A.mode === 'up'){
+      if(A.step === 'form'){
+        const r = await cloudSdk.auth.sendOtp({ email: email });
+        if(r.error) return cloudMsg(cloudAuthErr(r.error), true);
+        if(r.data && r.data.isExistingUser){
+          cloudAuth = { mode:'in', otp:true, step:'form', email: email, msg:'' };
+          cloudPanel();
+          return cloudMsg('这个邮箱已经注册过了，直接登录就行', false);
+        }
+        A.step = 'code';
+        A.verId = r.data ? r.data.verificationId : '';
+        A.existing = false;
+        return cloudPanel(), cloudMsg('验证码已发出，填上它就完成注册');
+      }
+      const pass = cloudVal('csPass');
+      if(!pass || pass.length < 6) return cloudMsg('密码至少 6 位', true);
+      const r = await cloudSdk.auth.verifyOtp({
+        verificationId: A.verId, token: cloudVal('csCode'), email: email,
+        isExistingUser: false, password: pass
+      });
+      if(r.error) return cloudMsg(cloudAuthErr(r.error), true);
+      return cloudAfterSignIn(r.data && r.data.user ? r.data.user : null);
+    }
+    if(A.mode === 'fg'){
+      if(A.step === 'form'){
+        const r = await cloudSdk.auth.resetPasswordForEmail(email);
+        if(r.error) return cloudMsg(cloudAuthErr(r.error), true);
+        A.step = 'code';
+        A._update = r.data && r.data.updateUser;
+        return cloudPanel(), cloudMsg('验证码已发出，填上它就能设新密码');
+      }
+      const pass = cloudVal('csPass');
+      if(!pass || pass.length < 6) return cloudMsg('新密码至少 6 位', true);
+      const r = await A._update({ nonce: cloudVal('csCode'), password: pass });
+      if(r.error) return cloudMsg(cloudAuthErr(r.error), true);
+      return cloudAfterSignIn(r.data && r.data.user ? r.data.user : null);
+    }
+  }catch(e){
+    cloudMsg(cloudAuthErr(e), true);
+  }finally{
+    if(btn && document.body.contains(btn)) btn.disabled = false;
+  }
+}
+
+function cloudAfterSignIn(user){
+  cloudUser = user ? { id: user.id, email: user.email } : cloudUser;
+  cloudAuth = { mode:'in', otp:false, step:'form', email:'', busy:false, msg:'', err:false, verId:'', existing:false };
+  cloudSetNet('busy', '正在首次同步…');
+  toast('登录成功，开始同步');
+  cloudPanel();
+  setTimeout(() => cloudSync({ user:true }), 60);
+}
+
+/* ---------- SDK 加载（先本机文件，再 CDN 兜底；不阻塞页面） ---------- */
+let cloudSdkState = 'idle';       /* idle | loading | ready | fail */
+let cloudSdkWait = [];
+function cloudHaveSdk(){
+  return typeof WorkBuddyCloud !== 'undefined' && WorkBuddyCloud && WorkBuddyCloud.createWorkBuddyCloud;
+}
+function cloudLoadSdk(cb){
+  if(cloudHaveSdk()){ cb(true); return; }
+  if(cloudSdkState === 'fail'){ cb(false); return; }
+  cloudSdkWait.push(cb);
+  if(cloudSdkState === 'loading') return;
+  cloudSdkState = 'loading';
+  /* 本机这份是从 CDN 上取下来的同一个包，放在同目录一起发布：
+     走自己的域名才不会被墙 / 被代理拦，离线也还在。
+     万一哪天本地文件丢了，再回 CDN 兜一次。 */
+  const srcs = ['wbcloud-sdk.js',
+                'https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js'];
+  let i = 0, settled = false;
+  const finish = ok => {
+    if(settled) return;
+    settled = true;
+    cloudSdkState = ok ? 'ready' : 'fail';
+    const q = cloudSdkWait.slice();
+    cloudSdkWait.length = 0;
+    q.forEach(f => { try{ f(ok); }catch(e){} });
+  };
+  const next = () => {
+    if(i >= srcs.length) return finish(false);
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = srcs[i++];
+    s.onload = () => { cloudHaveSdk() ? finish(true) : next(); };
+    s.onerror = () => next();
+    document.head.appendChild(s);
+  };
+  setTimeout(() => finish(cloudHaveSdk()), 12000);
+  next();
+}
+
+/* ---------- 启动 + 挂钩子 ---------- */
+function cloudBindBtn(){
+  const b = document.getElementById('cloudBtn');
+  if(b) b.onclick = cloudPanel;
+}
+function cloudRest(){
+  cloudSetNet('anon', '没登录 · 点这里登录');
+  /* 刷新页面后会话还在的话，直接把上次没推完的推掉 */
+  cloudSdk.auth.getSession().then(r => {
+    const s = r && r.data ? r.data : null;
+    if(s && s.user){
+      cloudUser = { id: s.user.id, email: s.user.email };
+      cloudSetNet('busy', '正在同步…');
+      cloudSync();
+    }
+  }).catch(() => {});
+  try{
+    cloudSdk.auth.onAuthStateChange((ev, session) => {
+      if(ev === 'SIGNED_OUT'){ cloudUser = null; cloudSetNet('anon', '已退出登录'); }
+      else if(session && session.user) cloudUser = { id: session.user.id, email: session.user.email };
+    });
+  }catch(e){}
+  /* 回到页面 / 网络恢复顺手同步一次；60 秒内不重复 */
+  const maybe = () => {
+    if(!cloudUser || cloudSyncing) return;
+    if(Date.now() - cloudSt.at < 60000) return;
+    cloudSync();
+  };
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') maybe(); });
+  window.addEventListener('focus', maybe);
+  window.addEventListener('online', maybe);
+}
+function cloudInit(){
+  cloudLoadSt();
+  cloudBindBtn();
+  cloudLoadSdk(ok => {
+    if(!ok){
+      cloudSdk = null;
+      cloudSetNet('off', '离线：这次没连上云服务');
+      return;
+    }
+    try{
+      cloudSdk = WorkBuddyCloud.createWorkBuddyCloud({
+        endpoint: CLOUD_CFG.endpoint,
+        publishableKey: CLOUD_CFG.publishableKey
+      });
+    }catch(e){
+      cloudSdk = null;
+      cloudSetNet('off', '云服务没准备好');
+      return;
+    }
+    cloudRest();
+    if(cloudModalOpen()) cloudPanel();
+  });
+}
+
+/* save() 是「本机一动就落盘」的总闸，借它排一次同步。
+   真正哪些天要推，同步前会重新扫一遍指纹算，不靠这里记账。 */
+const cloudRawSave = save;
+save = function(){
+  cloudRawSave();
+  cloudPending = true;
+  if(cloudUser && !cloudPulling){ cloudSetNet('busy', '有改动待同步'); cloudSchedule(1800); }
+};
+/* 删掉的卡片要留个墓碑，否则下次同步会被另一台设备的旧数据顶回来 */
+const cloudRawDelNode = delNode;
+delNode = function(id){
+  try{
+    const d = day();
+    const ds = d.del || (d.del = []);
+    const now = Date.now();
+    [id].concat(descendantsOf(id).map(n => n.id)).forEach(k => ds.push({ id:k, t:now }));
+  }catch(e){}
+  return cloudRawDelNode(id);
+};
+/* 撤销有可能把刚删掉的卡片救回来：把它的墓碑摘掉 */
+function cloudFixTomb(){
+  try{
+    const d = store.days[curDate];
+    if(!d || !Array.isArray(d.del) || !d.del.length) return;
+    const alive = {};
+    (d.nodes || []).forEach(n => { if(n && n.id) alive[n.id] = 1; });
+    const before = d.del.length;
+    d.del = d.del.filter(x => !alive[x.id]);
+    if(d.del.length !== before) cloudRawSave();
+  }catch(e){}
+}
+const cloudRawUndo = undo, cloudRawRedo = redo;
+undo = function(){ cloudRawUndo(); cloudFixTomb(); };
+redo = function(){ cloudRawRedo(); cloudFixTomb(); };
+
 function boot(){
   load();
   if(lsGet(TKEY) === 'dark') THEME = 'dark';
@@ -4776,7 +5582,8 @@ function welcomeHTML(){
   + '· <b>取消选中</b>：单击画布空白处就行，选中态会整个收干净<br>'
   + '· 底栏可缩放、适应视图、撤销重做；左下角小地图显示整棵树<br>'
   + '· 觉得太素？点底栏的<b>图片图标</b>换底色，或放一张自己的图片当背景；点<b>日/月图标</b>切深浅色<br>'
-  + '· 数据存在你本机浏览器里，可用「记录列表」里的导出备份成 JSON</p>'
+  + '· <b>换设备接着记</b>：点底栏的<b>云朵图标</b>，用邮箱开个账号，电脑和手机登录同一个账号记录就通了<br>'
+  + '· 数据存在你本机浏览器里，没登录时不会上传；可用「记录列表」里的导出备份成 JSON</p>'
   + '<p style="color:var(--mute);font-size:12px">快捷键：N 新建子分支 · 双击 编辑 · Tab 折叠/展开 · ↑↓←→ 切换分支 · Delete 删除 · Ctrl+Z 撤销 · F 适应视图 · 0 回到 100%<br>鼠标：空白双击 建节点 · 单击空白 取消选中 · 卡片右侧圆点 拖出子分支</p>'
   + '<div class="modal-foot"><button class="btn" id="noSeed">从空白开始</button><button class="btn pri" id="doSeed">载入示例数据看看</button></div>'
   + '<div style="margin-top:14px;text-align:right"><button class="btn sm" id="skipAll" style="background:none;border:none;color:var(--mute)">不再提示</button></div>';
@@ -4784,6 +5591,7 @@ function welcomeHTML(){
 window.closeModal = closeModal;
 window.addEventListener('error', e => { console.error('页面错误: ' + (e.message || e)); });
 boot();
+cloudInit();
 </script>
 </body>
 </html>

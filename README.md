@@ -2,6 +2,9 @@
 
 一天一棵分支树：随手记、随时翻、随手整理。**单文件、零依赖、离线可用**。
 
+> **要电脑和手机互通，请用在线版：<https://branch-recorder.app.workbuddy.host/>**
+> （云服务的登录接口按域名做精确校验，只有这个域名能登录；GitHub Pages 和 `file://` 都会被拒。）
+
 ---
 
 ## 两个版本
@@ -12,6 +15,7 @@
 | **安卓版（PWA）** | `安卓版/index.html` | 移动端改造版，配 Service Worker + 图标，可装到手机主屏 |
 
 两个版本相互独立，改一处不要顺手改另一处。
+发布用的在线包 `online/` 是**生成物**（见下文「在线版发布包」），不要手改。
 
 ## 功能
 
@@ -34,7 +38,45 @@
 
 ## 数据
 
-所有记录保存在浏览器 `localStorage` 里，**不上传任何服务器**。换设备或换浏览器数据不互通，请用导出功能自行备份。
+所有记录默认保存在浏览器 `localStorage` 里，**没登录就不会上传任何服务器**。换设备或换浏览器数据不互通，请用导出功能自行备份。
+
+### 云同步（电脑 ↔ 手机）
+
+两版都带云同步：点顶栏的**云朵图标**，用邮箱开个账号（邮箱验证码注册），
+电脑和手机登录同一个账号，记录就通了。
+
+- **只在官方在线地址上能用**：<https://branch-recorder.app.workbuddy.host/>。
+  云服务按 `Origin` 精确匹配，别的域名（GitHub Pages）会拿到 `403 access_denied`，
+  `file://` 双击打开的页面浏览器根本不让它连服务器。不在官方地址时面板会直接提示，不用等到报错。
+- 按天分片存：两台各推各改过的日子，A 在 10 号写、B 在 11 号写互不影响
+- 同一天里**两台各自新建的卡片都会留下**；同一张卡两边都改过时留你当前这台设备上的那版
+- 没登录 / 断网 / 离线时一切照旧走本机存储，只是不同步
+- 云端表 `day_books` / `app_meta` 开了行级安全：未登录时读写都返回 `42501 permission denied`
+
+依赖 `wbcloud-sdk.js`（WorkBuddy 云服务 SDK 的 IIFE 包，66 KB，与页面同目录一起发布）。
+升级：重新下载 `index.global.js` 覆盖即可。
+
+### 在线版发布包
+
+发布到官方域名的是 `online/`，**由脚本生成、已在 `.gitignore` 里**，不要手改里面的文件：
+
+```
+online/
+├── index.html            # 手写入口页（手机 UA 自动跳 m/），构建脚本会保留它
+├── pc.html               # ← 测试版/每日分支记录器-测试版.html
+├── wbcloud-sdk.js
+└── m/                    # ← 安卓版/
+    ├── index.html  manifest.webmanifest  sw.js  wbcloud-sdk.js  icons/
+```
+
+改完两版源码后重新生成并发布：
+
+```bash
+node 测试版/.audit/build-online.mjs .      # 重建 online/
+```
+
+然后用「发布应用」能力把 `online/` 发布出去，**必须复用云服务给这个应用的
+`appId`（`wbapp_Cv4QSaY9b8au6ATSb6YIZ0`）**——新建应用会换域名，云登录就断了。
 
 ## 效果图
 
@@ -46,11 +88,15 @@
 ```
 .
 ├── index.html                      # 在线入口页（GitHub Pages 首页）
+├── online/                         # 在线版发布包（生成物，.gitignore）
 ├── 测试版/
 │   ├── 每日分支记录器-测试版.html    # 桌面版应用（单文件）
+│   ├── wbcloud-sdk.js              # 云同步 SDK（与页面同目录）
+│   ├── .audit/                     # 回归脚本（.gitignore）
 │   └── 效果图/
 ├── 安卓版/
 │   ├── index.html                  # 安卓版应用（PWA）
+│   ├── wbcloud-sdk.js              # 云同步 SDK
 │   ├── manifest.webmanifest
 │   ├── sw.js                       # 离线缓存
 │   ├── icons/
