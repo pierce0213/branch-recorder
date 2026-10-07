@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日学习生活打卡看板 · 示例</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --line:#252a34;
+    --txt:#e8ecf3; --sub:#8b93a5;
+    --blue:#4f8cff; --cyan:#22d3ee; --green:#22c55e;
+    --orange:#f59e0b; --red:#ef4444; --purple:#a855f7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Microsoft YaHei","PingFang SC",sans-serif;
+    padding:24px; line-height:1.6;
+  }
+  .wrap{max-width:1280px;margin:0 auto}
+  .hero{
+    display:flex;justify-content:space-between;align-items:center;gap:32px;
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:28px 32px;margin-bottom:20px;flex-wrap:wrap;
+  }
+  .hero-left h1{font-size:26px;font-weight:700;letter-spacing:.5px}
+  .hero-left .date{color:var(--sub);font-size:14px;margin-top:6px}
+  .hero-left .quote{
+    margin-top:16px;padding-left:14px;border-left:3px solid var(--blue);
+    color:#c3cad8;font-size:15px;
+  }
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+  .kpi{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:20px 22px;transition:transform .2s,border-color .2s;
+  }
+  .kpi:hover{transform:translateY(-2px);border-color:#33405a}
+  .kpi .label{color:var(--sub);font-size:13px}
+  .kpi .val{font-size:30px;font-weight:700;margin:8px 0 4px;letter-spacing:-.5px}
+  .kpi .unit{font-size:14px;font-weight:400;color:var(--sub);margin-left:4px}
+  .kpi .delta{font-size:12.5px}
+  .up{color:var(--red)}   /* 中国习惯：涨红 */
+  .down{color:var(--green)} /* 跌绿 */
+  .flat{color:var(--sub)}
+  .charts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+  .panel{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:20px;overflow:hidden;
+  }
+  .panel h3{font-size:15px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .panel h3::before{content:"";width:3px;height:14px;background:var(--blue);border-radius:2px}
+  .panel .note{color:var(--sub);font-size:12px;margin-bottom:10px}
+  .panel.full{grid-column:1/-1}
+  .chart{width:100%;height:260px}
+  .chart.tall{height:320px}
+  #mind{background:#0f1115;border-radius:12px;padding:16px;overflow:auto;max-height:520px}
+  #mind svg{max-width:100%;height:auto}
+  .coach{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .coach .box{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;
+  }
+  .coach .box h4{font-size:14.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .coach ul{list-style:none;font-size:13.5px;color:#c3cad8}
+  .coach li{padding:7px 0 7px 18px;position:relative;border-bottom:1px dashed #21262f}
+  .coach li:last-child{border-bottom:none}
+  .coach li::before{content:"";position:absolute;left:0;top:15px;width:6px;height:6px;border-radius:50%}
+  .good li::before{background:var(--green)}
+  .warn li::before{background:var(--orange)}
+  .todo li::before{background:var(--blue)}
+  .footer{color:var(--sub);font-size:12.5px;text-align:center;padding:28px 0 8px}
+  .tag{
+    display:inline-block;font-size:11px;padding:2px 9px;border-radius:99px;
+    background:#1d2431;color:var(--blue);border:1px solid #2b3purple;border-color:#2b3648;
+  }
+  @media (max-width:1024px){
+    .charts{grid-template-columns:repeat(2,1fr)}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .coach{grid-template-columns:1fr}
+  }
+  @media (max-width:640px){
+    body{padding:14px}
+    .charts{grid-template-columns:1fr}
+    .hero{padding:22px}
+    .hero-left h1{font-size:21px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="hero-left">
+      <h1>打卡日报 <span class="tag">示例数据</span></h1>
+      <div class="date">2026年7月14日 · 星期二 · 第 12 天连续打卡</div>
+      <div class="quote">上午的四个小时决定了这一天，而不是晚上的三小时。</div>
+    </div>
+    <div id="scoreRing" class="chart" style="width:180px;height:180px;flex:none"></div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">学习专注时长</div><div class="val">5.1<span class="unit">h</span></div><div class="delta up">↑ 较昨日 +48min</div></div>
+    <div class="kpi"><div class="label">睡眠时长</div><div class="val">6.8<span class="unit">h</span></div><div class="delta up">↑ 较昨日 +0.5h</div></div>
+    <div class="kpi"><div class="label">运动时长</div><div class="val">30<span class="unit">min</span></div><div class="delta flat">— 与昨日持平</div></div>
+    <div class="kpi"><div class="label">精力自评</div><div class="val">7<span class="unit">/10</span></div><div class="delta down">↓ 较昨日 -1</div></div>
+  </div>
+
+  <div class="charts">
+    <div class="panel">
+      <h3>今日时间分配</h3>
+      <div class="note">深度学习仅占 20.8%，娱乐与浪费合计 5.5h，是最大可回收空间。</div>
+      <div id="pie" class="chart"></div>
+    </div>
+    <div class="panel">
+      <h3>近 7 日学习时长</h3>
+      <div class="note">整体呈上行趋势，但周六出现明显断崖，需要关注周末节奏。</div>
+      <div id="line" class="chart"></div>
+    </div>
+    <div class="panel">
+      <h3>近 7 日睡眠时长</h3>
+      <div class="note">7 天中有 4 天低于 7 小时目标线，睡眠是当前的短板。</div>
+      <div id="bar" class="chart"></div>
+    </div>
+    <div class="panel">
+      <h3>四维打卡雷达</h3>
+      <div class="note">学习与情绪优于上周，作息与身体持平，作息仍是拉低总分的主项。</div>
+      <div id="radar" class="chart"></div>
+    </div>
+    <div class="panel">
+      <h3>每日时间构成</h3>
+      <div class="note">深层时间（蓝+青）在工作日占比高，周末被娱乐显著挤压。</div>
+      <div id="stack" class="chart"></div>
+    </div>
+    <div class="panel">
+      <h3>精力与情绪曲线</h3>
+      <div class="note">两条曲线基本同步，睡眠不足的次日常见于双低点。</div>
+      <div id="dual" class="chart"></div>
+    </div>
+  </div>
+
+  <div class="panel full" style="margin-bottom:20px">
+    <h3>30 日打卡热力图</h3>
+    <div class="note">颜色越亮代表当日打卡得分越高，空白代表当天未记录。</div>
+    <div id="heat" class="chart" style="height:200px"></div>
+  </div>
+
+  <div class="panel full" style="margin-bottom:20px">
+    <h3>今日思维导图</h3>
+    <div class="note">中心为「我的一天」，一级分支覆盖学习、生活、身体、情绪、亮点与改进点。</div>
+    <div id="mind" class="mermaid"></div>
+  </div>
+
+  <div class="coach">
+    <div class="box good">
+      <h4>✅ 今天做得好</h4>
+      <ul>
+        <li>上午 7:30–11:30 连续深度专注 240 分钟，无中断</li>
+        <li>数学卷完成度 100%，超出计划的 1.5 套</li>
+        <li>按时三餐且午休控制在 90 分钟内</li>
+      </ul>
+    </div>
+    <div class="box warn">
+      <h4>⚠️ 需要警惕</h4>
+      <ul>
+        <li>短视频 70 分钟集中在 21:00 后，直接压缩了入睡时间</li>
+        <li>午后被消息打断 5 次后节奏未恢复，下午有效产出仅为上午的 45%</li>
+      </ul>
+    </div>
+    <div class="box todo">
+      <h4>🎯 明天只做 1 件事</h4>
+      <ul>
+        <li><strong>8:00–10:00 完成数学错题复盘（120 分钟）</strong></li>
+        <li>方法：手机留在客厅，只带错题本与笔</li>
+        <li>成功标准：整理出不少于 15 道错题及归因</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">本页为示例看板，用于预览图表与思维导图效果 · 实际数据由你的打卡记录生成</div>
+</div>
+
+<script>
+// ===== 数据区：改这里即可复用整页 =====
+const data = {
+  days: ["周三","周四","周五","周六","周日","周一","周二"],
+  studyHours: [4.2, 5.0, 5.6, 1.5, 3.0, 4.3, 5.1],
+  sleepHours: [6.0, 6.5, 7.2, 8.0, 7.5, 6.3, 6.8],
+  energy:     [6, 7, 8, 8, 7, 6, 7],
+  mood:       [6, 7, 8, 7, 8, 7, 7],
+  timeAlloc: [
+    {name:"深度学习", value:5},
+    {name:"浅层事务", value:3},
+    {name:"社交娱乐", value:2.5},
+    {name:"生活必需", value:8.5},
+    {name:"时间浪费", value:3}
+  ],
+  radarNow:  [8, 6, 7, 7],
+  radarPrev: [7, 6, 7, 6],
+  stack: [
+    {name:"深度学习", data:[4.2,5.0,5.6,1.5,3.0,4.3,5.1]},
+    {name:"浅层事务", data:[3,2.5,3,1,2,3,3]},
+    {name:"社交娱乐", data:[2,2,1.5,4,3,2,2.5]},
+    {name:"生活必需", data:[8.5,8,8,9,8.5,8.5,8.5]},
+    {name:"时间浪费", data:[2.3,3,2.9,5.5,3.5,2.2,3]}
+  ],
+  heat: Array.from({length:30}, (_,i) => {
+    const base = [62,71,55,80,0,68,74,83,45,0,77,69,88,58,72,0,64,79,91,52,0,70,66,85,49,73,0,81,60,76][i];
+    return [ (i%7), Math.floor(i/7), base ];
+  }),
+  score: 74
+};
+const C = {blue:"#4f8cff",cyan:"#22d3ee",green:"#22c55e",orange:"#f59e0b",red:"#ef4444",purple:"#a855f7",sub:"#8b93a5",line:"#252a34"};
+const baseGrid = {left:38,right:16,top:34,bottom:26};
+const axisStyle = {
+  axisLine:{lineStyle:{color:C.line}},
+  axisLabel:{color:C.sub,fontSize:11},
+  splitLine:{lineStyle:{color:"#1d222b"}}
+};
+
+// 得分环
+echarts.init(document.getElementById("scoreRing")).setOption({
+  series:[{
+    type:"gauge", startAngle:90, endAngle:-270, radius:"96%",
+    pointer:{show:false}, progress:{show:true, roundCap:true, width:14,
+      itemStyle:{color:C.blue}},
+    axisLine:{lineStyle:{width:14, color:[[1,"#212733"]]}},
+    axisTick:{show:false}, splitLine:{show:false}, axisLabel:{show:false},
+    detail:{valueAnimation:true, fontSize:34, fontWeight:700, color:"#e8ecf3",
+      offsetCenter:[0,"-6%"], formatter:"{value}"},
+    title:{offsetCenter:[0,"28%"], color:C.sub, fontSize:12},
+    data:[{value:data.score, name:"综合打卡得分"}]
+  }]
+});
+
+// 饼图
+echarts.init(document.getElementById("pie")).setOption({
+  tooltip:{trigger:"item", formatter:"{b}: {c}h ({d}%)"},
+  legend:{bottom:0, textStyle:{color:C.sub,fontSize:11}, itemWidth:9, itemHeight:9},
+  color:[C.blue,C.cyan,C.purple,C.green,C.orange],
+  series:[{
+    type:"pie", radius:["46%","72%"], center:["50%","44%"],
+    itemStyle:{borderColor:"#171a21", borderWidth:2},
+    label:{show:false}, labelLine:{show:false},
+    data:data.timeAlloc
+  }]
+});
+
+// 学习折线
+echarts.init(document.getElementById("line")).setOption({
+  tooltip:{trigger:"axis"},
+  grid:baseGrid,
+  xAxis:{type:"category", data:data.days, ...axisStyle, splitLine:{show:false}},
+  yAxis:{type:"value", name:"h", nameTextStyle:{color:C.sub}, ...axisStyle},
+  series:[{
+    type:"line", smooth:true, data:data.studyHours, symbolSize:7,
+    lineStyle:{width:2.5, color:C.blue},
+    itemStyle:{color:C.blue},
+    areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[
+      {offset:0,color:"rgba(79,140,255,.38)"},{offset:1,color:"rgba(79,140,255,0)"}])}
+  }]
+});
+
+// 睡眠柱
+echarts.init(document.getElementById("bar")).setOption({
+  tooltip:{trigger:"axis"},
+  grid:baseGrid,
+  xAxis:{type:"category", data:data.days, ...axisStyle, splitLine:{show:false}},
+  yAxis:{type:"value", name:"h", nameTextStyle:{color:C.sub}, ...axisStyle},
+  series:[{
+    type:"bar", data:data.sleepHours, barWidth:"48%",
+    itemStyle:{borderRadius:[5,5,0,0],
+      color:p=>p.value>=7?C.cyan:"#3b4a63"},
+    markLine:{silent:true, symbol:"none",
+      lineStyle:{color:C.orange,type:"dashed",width:1.5},
+      label:{formatter:"目标 7h",color:C.orange,fontSize:10,position:"end"},
+      data:[{yAxis:7}]}
+  }]
+});
+
+// 雷达
+echarts.init(document.getElementById("radar")).setOption({
+  tooltip:{},
+  legend:{bottom:0, textStyle:{color:C.sub,fontSize:11}, itemWidth:9, itemHeight:9},
+  radar:{
+    center:["50%","46%"], radius:"62%",
+    indicator:[{name:"学习",max:10},{name:"作息",max:10},{name:"身体",max:10},{name:"情绪",max:10}],
+    axisName:{color:"#c3cad8",fontSize:11.5},
+    splitLine:{lineStyle:{color:"#242a35"}},
+    splitArea:{areaStyle:{color:["rgba(79,140,255,.03)","rgba(79,140,255,.07)"]}},
+    axisLine:{lineStyle:{color:"#242a35"}}
+  },
+  series:[{
+    type:"radar", symbolSize:5,
+    data:[
+      {value:data.radarNow, name:"今日", lineStyle:{color:C.blue,width:2},
+       itemStyle:{color:C.blue}, areaStyle:{color:"rgba(79,140,255,.28)"}},
+      {value:data.radarPrev, name:"上周均值", lineStyle:{color:C.purple,width:1.6,type:"dashed"},
+       itemStyle:{color:C.purple}, areaStyle:{color:"rgba(168,85,247,.14)"}}
+    ]
+  }]
+});
+
+// 堆叠柱
+echarts.init(document.getElementById("stack")).setOption({
+  tooltip:{trigger:"axis", axisPointer:{type:"shadow"}},
+  legend:{bottom:0, textStyle:{color:C.sub,fontSize:10.5}, itemWidth:9, itemHeight:9},
+  grid:{...baseGrid, bottom:52},
+  color:[C.blue,C.cyan,C.purple,C.green,C.orange],
+  xAxis:{type:"category", data:data.days, ...axisStyle, splitLine:{show:false}},
+  yAxis:{type:"value", name:"h", nameTextStyle:{color:C.sub}, ...axisStyle},
+  series:data.stack.map(s=>({
+    name:s.name, type:"bar", stack:"t", data:s.data, barWidth:"52%",
+    itemStyle:{borderRadius:0}
+  }))
+});
+
+// 双曲线
+echarts.init(document.getElementById("dual")).setOption({
+  tooltip:{trigger:"axis"},
+  legend:{bottom:0, textStyle:{color:C.sub,fontSize:11}, itemWidth:9, itemHeight:9},
+  grid:{...baseGrid, bottom:52},
+  xAxis:{type:"category", data:data.days, ...axisStyle, splitLine:{show:false}},
+  yAxis:{type:"value", min:0, max:10, ...axisStyle},
+  series:[
+    {name:"精力", type:"line", smooth:true, data:data.energy, symbolSize:6,
+     lineStyle:{width:2.4,color:C.green}, itemStyle:{color:C.green}},
+    {name:"情绪", type:"line", smooth:true, data:data.mood, symbolSize:6,
+     lineStyle:{width:2.4,color:C.orange}, itemStyle:{color:C.orange}}
+  ]
+});
+
+// 热力图
+echarts.init(document.getElementById("heat")).setOption({
+  tooltip:{formatter:p=>`第 ${p.value[1]+1} 周 · 周${data.days[(p.value[0]+2)%7]}<br/>得分：${p.value[2]||"未记录"}`},
+  grid:{left:46,right:16,top:16,bottom:46},
+  xAxis:{type:"category", data:["一","二","三","四","五","六","日"],
+    ...axisStyle, splitLine:{show:false}},
+  yAxis:{type:"category", data:["第1周","第2周","第3周","第4周","第5周"],
+    ...axisStyle, splitLine:{show:false}},
+  visualMap:{
+    min:0,max:100, calculable:false, orient:"horizontal",
+    left:"center", bottom:4, itemWidth:11, itemHeight:80,
+    textStyle:{color:C.sub,fontSize:11},
+    inRange:{color:["#1b2230","#2b4a7a","#4f8cff","#22d3ee","#22c55e"]}
+  },
+  series:[{
+    type:"heatmap", data:data.heat, label:{show:false},
+    itemStyle:{borderColor:"#0f1115",borderWidth:2,borderRadius:3}
+  }]
+});
+
+// 思维导图
+mermaid.initialize({
+  startOnLoad:false, theme:"dark",
+  themeVariables:{darkMode:true, fontSize:"13px", primaryColor:"#1c2333",
+    primaryTextColor:"#e8ecf3", primaryBorderColor:"#4f8cff", lineColor:"#3d4759",
+    fontFamily:"-apple-system,Microsoft YaHei,sans-serif"}
+});
+const mindSrc = `mindmap
+  root(("我的一天 7月14日"))
+    学习
+      数学卷2套
+      "240 min 完成度 100%"
+      英语听力
+      "30 min 完成度 80%"
+    生活
+      睡眠
+      "6.8h 略低于目标"
+      三餐规律
+      午休 "90 min"
+    身体
+      跑步
+      "30 min 3km"
+      步数 "8200"
+    情绪
+      主要情绪 平静
+      压力 "6/10"
+      被消息打断后烦躁
+    亮点
+      上午连续专注4h
+      按时三餐
+      按计划入睡未拖
+    改进点
+      睡前刷手机
+      "70 min 需削减"
+      手机打断频繁
+      "下午 5 次"
+`;
+mermaid.render("mindSvg", mindSrc).then(r=>{
+  document.getElementById("mind").innerHTML = r.svg;
+}).catch(()=>{
+  document.getElementById("mind").innerHTML =
+    "<p style='color:#8b93a5;font-size:13px'>思维导图需联网加载渲染库；离线时会显示此提示，图表部分不受影响。</p>";
+});
+</script>
+</body>
+</html>

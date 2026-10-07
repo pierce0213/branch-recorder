@@ -1,0 +1,22 @@
+# 工作区私有数据：AI 记忆、备份、会话状态
+.workbuddy/
+
+# 测试脚手架与中间产物
+.audit/
+**/.audit/
+
+# 截图/构建日志
+*.log.txt
+
+# 本地临时草稿
+_*.txt
+._*
+.android-probe.txt
+.mk.txt
+.pkg.py
+.pkg.txt
+
+# 系统杂物
+Thumbs.db
+.DS_Store
+desktop.ini

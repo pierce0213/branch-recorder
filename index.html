@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>每日分支记录器</title>
+<style>
+  :root{
+    --bg:#eef1f6; --card:#ffffff; --ink:#111827; --mute:#6b7280;
+    --line:#e3e8ef; --accent:#3b6ef5; --accent-hot:#1d4ed8; --soft:#f5f7fb;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0e0e10; --card:#17171b; --ink:#f3f4f6; --mute:#9aa0aa;
+           --line:#27272e; --accent:#5b8cff; --accent-hot:#a9c8ff; --soft:#1d1d22; }
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+         "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:32px 20px;
+  }
+  main{ width:100%; max-width:520px; }
+  h1{ font-size:26px; margin:0 0 6px; letter-spacing:.5px; }
+  .sub{ color:var(--mute); margin:0 0 26px; }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:18px; margin-bottom:14px;
+  }
+  .card h2{ font-size:15px; margin:0 0 4px; }
+  .card p{ margin:0 0 14px; color:var(--mute); font-size:13.5px; }
+  a.btn{
+    display:block; text-align:center; text-decoration:none;
+    background:var(--accent); color:#fff; font-weight:600;
+    padding:12px; border-radius:10px;
+  }
+  a.btn.ghost{ background:var(--soft); color:var(--ink); border:1px solid var(--line); }
+  a.btn:active{ transform:translateY(1px); }
+  .tip{
+    margin-top:22px; padding:14px 16px; border-radius:12px;
+    background:var(--soft); border:1px dashed var(--line);
+    color:var(--mute); font-size:13px;
+  }
+  .tip b{ color:var(--ink); }
+  code{ background:var(--soft); padding:1px 5px; border-radius:5px; font-size:12.5px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>每日分支记录器</h1>
+  <p class="sub">一天一棵分支树：随手记、随时翻、随手整理。</p>
+
+  <div class="card">
+    <h2>桌面版</h2>
+    <p>单文件、零依赖，浏览器里直接画布记笔记。功能最全。</p>
+    <a class="btn" href="测试版/每日分支记录器-测试版.html">打开桌面版</a>
+  </div>
+
+  <div class="card">
+    <h2>手机版（可装到主屏）</h2>
+    <p>双指缩放、长按拖拽，装到主屏后断网也能记。</p>
+    <a class="btn" href="安卓版/">打开手机版</a>
+  </div>
+
+  <div class="tip">
+    <b>装到手机主屏</b>：用手机 Chrome 打开手机版后，右上角菜单里选
+    <b>「添加到主屏幕」</b>即可（需要有 https 地址，本页就是）。<br>
+    记录只存在你自己的浏览器里，不上传任何服务器。
+  </div>
+</main>
+</body>
+</html>

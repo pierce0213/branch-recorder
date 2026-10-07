@@ -1,0 +1,26 @@
+{
+  "name": "每日分支记录器",
+  "short_name": "分支记录",
+  "description": "一天一棵分支树：随手记、随时翻、随手整理。装在手机上，离线也能用。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "id": "daily-branch-recorder",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#eef1f6",
+  "theme_color": "#eef1f6",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    { "src": "icons/favicon-32.png", "sizes": "32x32", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "记录列表", "short_name": "列表", "url": "./?go=days" },
+    { "name": "今天的大纲", "short_name": "大纲", "url": "./?go=outline" }
+  ]
+}

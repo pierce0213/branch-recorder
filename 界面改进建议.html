@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>每日分支记录器 · 界面改进建议</title>
+<style>
+  :root{
+    --bg:#f7f8fb; --card:#ffffff; --line:#e4e8f0; --line2:#eef1f7;
+    --ink:#1c2433; --ink2:#3c4657; --mute:#7d8798; --accent:#3b6ef5; --accent2:#eaf0ff;
+    --p0:#e5484d; --p0bg:#fdecec; --p1:#d97706; --p1bg:#fdf3e4; --p2:#0f8a6a; --p2bg:#e7f6f1;
+    --ref:#6b4de6; --refbg:#f0ecfe;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Microsoft YaHei UI","PingFang SC","Hiragino Sans GB","Source Han Sans SC",system-ui,sans-serif;
+    font-size:14.5px;line-height:1.72;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:52px 28px 90px}
+  header.hero{margin-bottom:38px}
+  .kicker{color:var(--accent);font-weight:600;letter-spacing:.08em;font-size:12.5px;margin-bottom:10px}
+  h1{font-size:31px;line-height:1.3;margin:0 0 14px;letter-spacing:-.01em}
+  .lede{color:var(--ink2);font-size:15.5px;max-width:44em;margin:0}
+  .meta{margin-top:18px;color:var(--mute);font-size:12.5px;display:flex;gap:18px;flex-wrap:wrap}
+  .meta b{color:var(--ink2);font-weight:600}
+
+  h2{
+    font-size:19px;margin:52px 0 6px;padding-top:6px;letter-spacing:-.005em;
+    display:flex;align-items:baseline;gap:10px;
+  }
+  h2 .n{
+    font-size:12px;color:var(--mute);font-weight:600;border:1px solid var(--line);
+    border-radius:6px;padding:1px 7px;background:#fff;position:relative;top:-1px;
+  }
+  h2 + .sub{color:var(--mute);font-size:13.5px;margin:0 0 20px}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:20px 22px 18px;margin-bottom:14px;
+  }
+  .card h3{
+    font-size:16px;margin:0 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .tag{
+    font-size:11.5px;font-weight:600;border-radius:6px;padding:2px 8px;letter-spacing:.02em;
+    flex:0 0 auto;
+  }
+  .tag.p0{color:var(--p0);background:var(--p0bg)}
+  .tag.p1{color:var(--p1);background:var(--p1bg)}
+  .tag.p2{color:var(--p2);background:var(--p2bg)}
+  .tag.ref{color:var(--ref);background:var(--refbg);font-weight:500}
+
+  .row{display:flex;gap:12px;margin:9px 0 0}
+  .row .k{
+    flex:0 0 62px;color:var(--mute);font-size:12.5px;font-weight:600;
+    padding-top:1px;letter-spacing:.03em;
+  }
+  .row .v{flex:1;color:var(--ink2);min-width:0}
+  .row .v em{font-style:normal;color:var(--ink);font-weight:600}
+  .row .v code{
+    background:#f2f5fa;border:1px solid var(--line2);border-radius:5px;
+    padding:1px 6px;font-size:12.5px;font-family:ui-monospace,Consolas,monospace;color:#2f3a4d;
+  }
+  .row .v ul{margin:2px 0 0;padding-left:19px}
+  .row .v li{margin:3px 0}
+
+  .callout{
+    background:var(--accent2);border:1px solid #d5e0ff;border-radius:12px;
+    padding:14px 18px;margin:22px 0;color:#27364f;font-size:14px;
+  }
+  .callout b{color:#1a4fd6}
+  .danger{background:#fff8f2;border-color:#f7ddc4;color:#5a4023}
+  .danger b{color:#b45309}
+
+  table{width:100%;border-collapse:collapse;margin:6px 0 0;font-size:13.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line2);vertical-align:top}
+  th{color:var(--mute);font-weight:600;font-size:12.5px;letter-spacing:.03em;border-bottom:1px solid var(--line)}
+  td b{color:var(--ink)}
+  tr:last-child td{border-bottom:0}
+  .tbl{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 14px 6px;overflow-x:auto}
+
+  .avoid{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .avoid span{
+    background:#fff;border:1px solid var(--line);border-radius:20px;
+    padding:5px 13px;font-size:13px;color:var(--mute);text-decoration:line-through;
+    text-decoration-color:#f0b4b4;
+  }
+  footer{margin-top:56px;color:var(--mute);font-size:12.5px;border-top:1px solid var(--line);padding-top:18px}
+  footer b{color:var(--ink2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">界面参考建议 · 不含代码改动</div>
+  <h1>每日分支记录器 · 可参考的界面改进方向</h1>
+  <p class="lede">
+    下面每一条都对应一个已在线的同类产品做法：先说你现在界面上的具体位置和现象，再说参考产品怎么做的，最后说落到这个应用上可以怎么改。
+    按「先做 / 值得规划 / 锦上添花」三档排序，每档内部的顺序就是投入产出比。
+  </p>
+  <div class="meta">
+    <span>对照版本：<b>每日分支记录器.html</b>（3176 行）</span>
+    <span>参考对象：<b>Xmind · MindNode · Heptabase · Kinopio · tldraw · Excalidraw · Obsidian Canvas · Diarium</b></span>
+    <span>整理时间：<b>2026-09-29</b></span>
+  </div>
+</header>
+
+<div class="callout">
+  <b>一句话结论：</b>你现在缺的不是功能，是「分层」。画布上的卡片同时承担了「概览」和「详情」两件事，
+  于是每张卡都很小却很满（标题＋时间＋时长＋星级＋备注＋标签＋子分支钮），一屏只能看清三五张；
+  右侧面板又把详情做成了表单。同类产品 2026 年的共识是——<b>画布只负责结构和归属，详情交给面板，输入交给大纲。</b>
+</div>
+
+<!-- ============ P0 ============ -->
+<h2><span class="n">01</span>最值得先做的三件事</h2>
+<p class="sub">这三条互相咬合：卡片瘦下来 → 画布能放下更多 → 大纲负责快速录入。</p>
+
+<div class="card">
+  <h3>卡片做成「折叠 / 展开」两态<span class="tag p0">先做</span><span class="tag ref">参考 Heptabase 卡片 · Xmind Zone</span></h3>
+  <div class="row"><div class="k">现在的样子</div><div class="v">
+    画布上每张卡片都同时显示：状态色点、标题、时间区间、「2 小时」时长、四星评分、一行备注、底部标签行、「+ 子分支」按钮，
+    悬停时右上角再挤进一排编辑 / 图钉 / 复制 / 删除图标。卡片高度被撑到 ~130px，文字被迫压到很小，75% 缩放下已经不好读。
+  </div></div>
+  <div class="row"><div class="k">参考产品</div><div class="v">
+    <em>Heptabase</em> 的卡片默认只有标题＋一行摘要，点开才展开成完整文档（属性和内容块都在展开态）；
+    <em>Xmind 2026</em> 的「Zone 专区」则是反过来——用一个可命名、可着色的圆角背景把一组主题框住，随内容自动长大。
+    两者共同点是：<em>屏幕上永远只呈现当前需要的那一层信息</em>。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    <ul>
+      <li>默认折叠态只保留：状态色点 ＋ <b>标题</b> ＋ 一行摘要（自动取备注首句），高度压到 56–64px；</li>
+      <li>选中或悬停时展开成现在的完整卡片（时间/评分/备注/标签/图片），用 150ms 高度过渡而不是「跳」；</li>
+      <li>留一个「全部展开 / 全部折叠」的开关（快捷键比如 <code>Alt+E</code>），讲给别人听的时候一键铺开；</li>
+      <li>再往上一层：把「上午 / 下午 / 晚上」或「工作 / 生活」这类分组做成 Zone 式的半透明圆角底板，底板标题可改色，节点拖进去自动归属——这样分组靠「空间包含」表达，不必靠连线，视觉上立刻清爽一档。</li>
+    </ul>
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>让每条一级分支拥有自己的颜色<span class="tag p0">先做</span><span class="tag ref">参考 Kinopio 空间着色 · Heptabase 彩色卡片</span></h3>
+  <div class="row"><div class="k">现在的样子</div><div class="v">
+    卡片左侧只有一个表示「状态」的小色点（专注/分心/休息…），整棵树其余部分全是同一个蓝。
+    看一屏卡片时，判断「这几张是不是同一个分支」只能靠连线的走向，缩到 50% 以下基本靠猜。
+  </div></div>
+  <div class="row"><div class="k">参考产品</div><div class="v">
+    <em>Kinopio</em> 允许每个空间单独配色，靠色彩建立「这是同一个地方」的空间记忆；
+    <em>Heptabase</em> 的卡片可以着色再用颜色做视觉聚类；<em>Xmind</em> 的分支配色也是按一级主题自上而下继承的。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    一级分支各分一个色相（建议从你的状态色里取，避免再多一套颜色语言），
+    子分支继承同一色相的 <em>不同明度</em>（每深一层降 12% 明度、降 15% 饱和）。
+    连线颜色跟着分支走——这样「归属」是一眼可见的，连线只负责「顺序」，视觉负担立刻下降一半。
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>加一个「大纲」视图，与画布双向切换<span class="tag p0">先做</span><span class="tag ref">参考 Xmind 大纲模式 · MindNode map ⇄ outline</span></h3>
+  <div class="row"><div class="k">现在的样子</div><div class="v">
+    所有录入都必须在画布上完成：拖出一个节点、双击、打字。记五件事就要摆五个节点，
+    而且整理之前位置是乱的，「先把一天记完、晚点再整理」这个最自然的用法现在是别扭的。
+  </div></div>
+  <div class="row"><div class="k">参考产品</div><div class="v">
+    <em>Xmind 2026.4</em> 把「在思维导图和大纲之间自由切换」作为版本级更新：干净的线性列表、<code>Tab</code>/<code>回车</code> 快速编辑、
+    拖动重组、每个节点可挂富文本与图片；<em>MindNode</em> 的整个卖点就是「结构出现时在导图与大纲之间来回切」。
+    这不是功能堆叠，而是<em>把「录入」和「梳理」拆成两种完全不同的心情</em>。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    <ul>
+      <li>加一层大纲侧栏（或全屏切换），左侧线性列表、右侧画布，<b>两边选中状态实时联动</b>——列表里选中一行，画布平滑把它居中高亮；</li>
+      <li>键盘沿用现在已有的 <code>N</code>/<code>Tab</code>，再加 <code>回车</code> 建同级、<code>Shift+回车</code> 建子级（这是 Xmind 用户的肌肉记忆）；</li>
+      <li>大纲里直接打字就建节点，不用先「新建」再「编辑」——这一步能省掉现在最烦的一次双击。</li>
+    </ul>
+  </div></div>
+</div>
+
+<!-- ============ P1 ============ -->
+<h2><span class="n">02</span>交互与效率</h2>
+<p class="sub">都是「不加新功能，只把现有动作变顺」的改动。</p>
+
+<div class="card">
+  <h3>把卡片上的操作列改成「选中后浮在卡片上方」<span class="tag p1">值得规划</span><span class="tag ref">参考 tldraw 上下文工具栏 · Xmind 2026 浮动工具栏</span></h3>
+  <div class="row"><div class="k">现在的样子</div><div class="v">
+    编辑 / 图钉 / 复制 / 删除四个图标固定在卡片右上角内侧。卡片小的时候它们占了近 1/4 的宽度，
+    还会把标题挤到换行；不选中卡片时它们也在，属于纯占位。
+  </div></div>
+  <div class="row"><div class="k">参考产品</div><div class="v">
+    <em>tldraw</em> 把这件事封装成了标准件（Contextual Toolbar）：工具栏浮在选中形状<b>上方</b>，
+    组件内部自动处理「跟随画布平移、滚轮穿透、拖拽形状时自动隐藏、贴近屏幕边缘自动收拢」；
+    <em>Xmind 2026.8</em> 也刚加了「选中主题后快捷操作直接出现在主题旁边」。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    改成选中态才出现的浮动小条，浮在卡片上方 8px；拖动卡片时淡出，松手淡入；
+    卡片靠近视口顶部时自动翻到下方。腾出来的右上角可以放一个「折叠/展开」的角标。
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>搜索升级成「命令面板」<span class="tag p1">值得规划</span><span class="tag ref">参考 Excalidraw Command Palette · Linear/Notion 的 Cmd+K</span></h3>
+  <div class="row"><div class="k">现在的样子</div><div class="v">
+    顶栏有一个搜索图标，点开大概是面板形式的搜索。用户要「整理布局」得去左侧点图标，要「切主题」得去底栏点图标，
+    要「导出」得先点开记录列表——三个动作分散在三个地方。
+  </div></div>
+  <div class="row"><div class="k">参考产品</div><div class="v">
+    <em>Excalidraw</em> 内置 Command Palette，把散落的动作收进一个可搜索列表；
+    <em>Obsidian Canvas</em> 的价值也在同一个思路上——「四个月前的图还能按内容找到，而不是靠记住放在哪」。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    一个 <code>Ctrl/Cmd+K</code> 输入框同时做三件事，按输入内容自动分流：
+    <ul>
+      <li>匹配到节点 → 直接列出，回车后<b>飞到画布上那个节点</b>并选中（不是弹一个列表让人自己找）；</li>
+      <li>匹配到命令 → 整理布局 / 切主题 / 换背景 / 导出 / 跳到某天；</li>
+      <li>都不匹配 → 最后一行是「新建分支：&lt;你输入的内容&gt;」，回车即建。</li>
+    </ul>
+    顺带把「搜索历史节点」（跨天全文搜）也放在这里——这是这个产品目前最大的隐藏价值，但现在翻不到。
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>连续建子节点时「锁定父节点」<span class="tag p1">值得规划</span><span class="tag ref">参考 Excalidraw 工具锁定 · Xmind 添加主题按钮</span></h3>
+  <div class="row"><div class="k">现象</div><div class="v">
+    把一个想法拆成五条子分支，大概率要重复「选中父节点 → 新建 → 打字」五轮；
+    中途手一碰空白处选中就被清掉（这正是你上一轮要求加的行为），连键盘也救不回来。
+  </div></div>
+  <div class="row"><div class="k">参考产品</div><div class="v">
+    <em>Excalidraw</em> 有 LockButton：锁定当前工具后连续画同一类图形，不弹回选择工具；
+    它还记录「最近用过的子工具」并留在主工具栏上。<em>Xmind 2026.8</em> 干脆加了一个常驻的「添加主题」按钮，
+    一键创建细分主题或并列主题，「无需记快捷键」。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    选中一张卡片后，出现一个「继续拆分」的锁定开关（或直接双击卡片空白区就建一个子节点）；
+    锁定期间每次 <code>回车</code> 都往同一个父节点下追加一个同级子节点，光标自动落到新节点里，直到按 <code>Esc</code> 解锁。
+    拆分支从「五轮操作」变成「一轮输入」。
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>「整理布局」分温和版和彻底版<span class="tag p1">值得规划</span><span class="tag ref">参考 Heptabase Card Space-out / Tidy Up</span></h3>
+  <div class="row"><div class="k">现在的样子</div><div class="v">
+    一键整理会把所有手工位置清空、整棵树回到自动布局。手工摆过的那种「今天想重点看的放在正中间」的意图会被抹掉，
+    所以很多人整理过一次之后就不敢再点了。
+  </div></div>
+  <div class="row"><div class="k">参考产品</div><div class="v">
+    <em>Heptabase</em> 把这件事拆成两个动作：<b>Card Space-out</b> 只解决卡片互相压住的问题，大体位置不动；
+    <b>Tidy Up</b> 才是重新排列。同时它支持「只按选区整理」——框选一部分再整，其他不受影响。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    <ul>
+      <li>点一下＝<b>只推开重叠</b>（保持相对位置，最小位移），长按或右键菜单里才是「彻底重排」；</li>
+      <li>有框选时，整理只作用于选中范围（配合多选功能）；</li>
+      <li>整理前给一次 <code>Ctrl+Z</code> 就能撤销的提示——现在撤销已经有，缺的是让人敢按。</li>
+    </ul>
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>底栏 11 个图标瘦身、左栏图标带出文字<span class="tag p1">值得规划</span><span class="tag ref">参考 Excalidraw 主/次工具分组 · Linear 侧栏</span></h3>
+  <div class="row"><div class="k">现在的样子</div><div class="v">
+    底栏横排了适应视图、缩小、100%、放大、全屏、小地图、背景、主题、撤销、重做共 11 个纯图标；
+    左侧竖排了 5 个纯图标工具。全部依赖 tooltip，第一次用的人基本是盲点——「时间轴」和「统计」两个图标尤其像。
+  </div></div>
+  <div class="row"><div class="k">参考产品</div><div class="v">
+    <em>Excalidraw</em> 的做法很克制：主工具直接排在工具栏上，次要工具（Frame / Laser / Bucket…）
+    统一收进一个 <b>Extra tools</b> 下拉；手机端则用 Popover 把同类工具归组，并让「最近用过的那个」留在主栏。
+    <em>Linear / Notion</em> 的侧栏则是悬停即展开成「图标＋文字」。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    <ul>
+      <li>底栏按语义切成三组，中间加细竖线：<em>视图</em>（适应/缩放）｜<em>外观</em>（背景/主题/小地图）｜<em>历史</em>（撤销/重做）；</li>
+      <li>「全屏」「小地图」这类低频项收进一个「显示设置」浮层，底栏从 11 个降到 6–7 个；</li>
+      <li>左侧竖条做成悬停展开（约 200ms）的「图标＋文字」，或至少在首次使用时显示一次文字标签。</li>
+    </ul>
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>小地图改成真的有用<span class="tag p1">值得规划</span><span class="tag ref">参考 Figma / Miro 的 minimap</span></h3>
+  <div class="row"><div class="k">现在的样子</div><div class="v">
+    左下角小地图显示整棵树的缩略方块和一个视口框，但缩略块颜色单一、分不清哪块是哪个分支；
+    缩到 25% 时它能提供的信息几乎为零，却一直占着画布一角。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    <ul>
+      <li>缩略方块沿用「一级分支配色」，于是小地图本身就是一张分支色块图，一眼看出今天的重心偏在哪；</li>
+      <li>当前选中的节点在小地图上高亮（别的变淡），这样「我在树的哪个位置」永远有答案；</li>
+      <li>在真实缩放低于 40% 时自动隐藏（此时整棵树已经全在屏幕里，不需要它了）；</li>
+      <li>点击小地图任意位置直接跳过去，而不是只能拖视口框。</li>
+    </ul>
+  </div></div>
+</div>
+
+<!-- ============ 时间维度 ============ -->
+<h2><span class="n">03</span>把「每日」做成别人抄不了的部分</h2>
+<p class="sub">树形画布市面上很多，但「一天一棵树、连起来是一年」是你独有的。现在这块最弱。</p>
+
+<div class="card">
+  <h3>加一个日历热力入口，一步切到任何一天<span class="tag p1">值得规划</span><span class="tag ref">参考 时间戳日记 日历圆点 · GitHub 贡献图</span></h3>
+  <div class="row"><div class="k">现在的样子</div><div class="v">
+    切日期要走「记录列表 → 找到那天 → 点进去」两步；顶栏虽然显示了「9月29日 周二」，但它看起来只是标签不是按钮。
+    更重要的是：<b>看不到自己在坚持什么</b>——哪几天记得多、哪几天断了，全靠记忆。
+  </div></div>
+  <div class="row"><div class="k">参考产品</div><div class="v">
+    <em>时间戳日记</em>把日历做成了核心视图：每天一个彩色圆点，直观展示生活节奏，点任一天可补记或预览；
+    <em>Diarium</em> 的逻辑是「统一时间轴」，把当天的一切汇成一个可回看的快照。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    顶栏那个日期做成可点的按钮，点开是一个<b>月视图</b>：每格按当天分支数着色深浅（或按完成度评分着色），
+    空白格＝那天没记。点格子直接切过去。这一屏同时解决三件事：切日期、找断档、看到积累。
+    再在格子角上给一个「补记昨天」的快捷入口。
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>日期左右滑动 / 快捷键切换<span class="tag p2">锦上添花</span><span class="tag ref">参考 时间戳日记「天视图」左右滑动穿越时光</span></h3>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    在日期旁给一对 <code>‹ ›</code>，并绑 <code>Ctrl/Cmd + ←/→</code>（现在裸方向键都给了分支导航，不要抢）。
+    切换时让画布做一次横向推入的转场，形成「翻日记」的身体记忆——这是纯情绪价值，但日记类产品就吃这一口。
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>跨天连线：让「每天一页」接成一条连续的树<span class="tag p2">锦上添花</span><span class="tag ref">参考 Obsidian Canvas 节点即笔记 · GitMind 跨链注释</span></h3>
+  <div class="row"><div class="k">现在的样子</div><div class="v">
+    每天是一棵独立的树，昨天的分支和今天的分支之间没有任何关系。
+    「这件事是昨天那件事的延续」这种最真实的情况，现在表达不出来。
+  </div></div>
+  <div class="row"><div class="k">参考产品</div><div class="v">
+    <em>Obsidian Canvas</em> 的关键设定是：画布上的节点就是笔记本体，所以同一个笔记能出现在多张画布上、改一处全都改；
+    <em>GitMind</em> 提供「跨链注释」，让一个概念在不打破主树结构的前提下参与多个位置。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    允许从今天的某个节点拉一条<b>虚线</b>（区别于实线的父子关系）连到另一天的节点，样式上更像「引用」而不是「从属」。
+    点虚线可以跳过去。这一步做了，产品就从「每日记录器」变成「连续的人生树」——是目前最有壁垒的方向。
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>一键导出「当天长图」<span class="tag p2">锦上添花</span><span class="tag ref">参考 时间戳日记 多风格长图分享</span></h3>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    把当天的树排成一版竖构图（标题＋日期＋树的特写＋一行统计），一键存图。
+    同时把导出格式补齐成三种：<b>Markdown 大纲</b>、<b>OPML</b>（Xmind / MindNode / GitMind 都认这个，是这一行的通用交换格式）、<b>PNG 长图</b>。
+    现在的导出只有 JSON 备份，那是给自己用的，不能给别人看。
+  </div></div>
+</div>
+
+<!-- ============ 视觉 ============ -->
+<h2><span class="n">04</span>视觉与材质</h2>
+<p class="sub">2026 年的主流不是加特效，是「克制」——趋势报告里叫 Calm Interface（平静界面）。</p>
+
+<div class="card">
+  <h3>浮层用「负责任的玻璃拟态」，画布保持实体<span class="tag p2">锦上添花</span><span class="tag ref">参考 iOS 26 Liquid Glass · 2026 趋势报告</span></h3>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    只给<b>浮层</b>用半透明＋背景模糊：顶栏、底栏、右侧详情面板、卡片悬停工具条。
+    行业共识很明确：玻璃只用在 overlay / 模态 / 侧栏 / 悬浮导航，而且必须配 <em>1px 半透明描边</em>（白色 20–40% 透明度）
+    来撑出边缘；卡片本体<b>不要</b>玻璃化，否则画布会变成一堆糊片。
+    另外要盯对比度：正文 ≥ 4.5:1、标题 ≥ 3:1（浅色和深色两套都要各测一遍），玻璃下面有内容滚动时最容易翻车。
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>微交互统一到 150ms 弹簧曲线<span class="tag p2">锦上添花</span><span class="tag ref">参考 2026 动效趋势（Spring Physics）</span></h3>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    现状：整理布局的 560ms 缓动很好，保留；但按钮按下、开关切换、面板开合这类小反馈还有提升空间。
+    趋势是「微交互用阻尼弹簧、时长 &lt; 150ms」，让点击有触感；而<b>大跨度动画</b>（如整理布局）才用长缓动。
+    两条规则不要混用。同时务必继续尊重系统「减少动态效果」——你这条已经做对了。
+  </div></div>
+</div>
+
+<div class="card">
+  <h3>空状态引导从面板搬到画布上<span class="tag p2">锦上添花</span><span class="tag ref">参考 MindNode 的 calm design</span></h3>
+  <div class="row"><div class="k">现在的样子</div><div class="v">
+    右侧面板里有一段很不错的引导（「还没有子分支。点下面这个钮，把『数学错题复盘』再拆得细一点……」）＋一个主按钮。
+    但它是放在一个<b>属性面板</b>里的——属性面板应该只陈述事实，引导出现在这里反而让面板显得吵、也让按钮抢了「复制/删除」的注意力。
+  </div></div>
+  <div class="row"><div class="k">可以怎么改</div><div class="v">
+    把这条引导做成画布上的<b>幽灵提示</b>：选中卡片时，在它右侧浮现一个虚线框＋「点这里拆细一点」，
+    点一下就变成真的子节点。MindNode 的整个设计哲学就是「不急、不吵，让想法自己长出来」。
+    面板回归纯粹的信息陈列。
+  </div></div>
+</div>
+
+<!-- ============ 避坑 ============ -->
+<h2><span class="n">05</span>明确不建议抄的东西</h2>
+<p class="sub">这些在 2026 年的趋势报告里被点名为「过时」或「容易翻车」，热度高但落地差。</p>
+<div class="callout danger">
+  <b>重度新拟态（Neumorphism）</b>——厚阴影凹凸按钮，在浅色画布上对比度极差，可读性直接不合格；<br>
+  <b>满屏夸张粒子 / 超长转场动画</b>——2025 流行过，2026 已明确退潮，只保留功能性动效；<br>
+  <b>无约束的杂乱渐变、大面积高饱和撞色</b>——放在「每日记录」这种要长期高频看的产品里会很快累；<br>
+  <b>默认铺满画布的 AI 面板</b>——趋势是「副驾驶而不是自动驾驶」：AI 建议要可编辑、可撤回、能看见来源，且默认不占主画布。
+</div>
+<div class="avoid">
+  <span>厚阴影软胶按钮</span><span>全屏粒子动效</span><span>大面积霓虹撞色</span>
+  <span>磨砂糊住整块画布</span><span>默认打开的侧边聊天框</span>
+</div>
+
+<!-- ============ 速查表 ============ -->
+<h2><span class="n">06</span>参考产品速查表</h2>
+<p class="sub">如果只想挑一个照着做，就看「值得抄的一点」这一列。</p>
+<div class="tbl">
+<table>
+  <tr><th style="width:120px">产品</th><th style="width:34%">定位</th><th>值得抄的一点</th></tr>
+  <tr><td><b>Xmind</b></td><td>思维导图</td><td>大纲 ⇄ 导图自由切换（Tab/回车编辑、拖动重组）；Zone 专区做分组底板；2026.8 新上的「选中即浮出的工具栏」和「添加主题按钮」</td></tr>
+  <tr><td><b>MindNode</b></td><td>苹果系思维导图</td><td>「calm design」的默认值哲学：不配置就好看；Focus Mode 专注单支；Presentation Mode 把树变成讲述式幻灯片</td></tr>
+  <tr><td><b>Heptabase</b></td><td>卡片＋白板</td><td>卡片折叠/展开两态；Tidy Up 与 Card Space-out 分开（重排 vs 只推开重叠）；Journal 与卡片互链；本地优先、离线可用</td></tr>
+  <tr><td><b>Kinopio</b></td><td>空间笔记</td><td>每个空间独立配色与背景，用色彩建立空间记忆；卡片式评论；[[标签]]反向链接</td></tr>
+  <tr><td><b>tldraw</b></td><td>画布 SDK</td><td>上下文工具栏的标准实现：跟随相机、滚轮穿透、拖拽时自动隐藏、贴边自动收拢——可以直接照这个规格做</td></tr>
+  <tr><td><b>Excalidraw</b></td><td>手绘白板</td><td>主工具直显＋次要工具收进下拉；移动端把同类工具归组并记住「最近用过」；工具锁定；命令面板</td></tr>
+  <tr><td><b>Obsidian Canvas</b></td><td>笔记画布</td><td>节点就是笔记本体——同一份内容能出现在多处、改一处全改；全文搜索让旧图按内容可寻</td></tr>
+  <tr><td><b>Diarium</b></td><td>日记</td><td>统一时间轴：把日记与天气/步数/位置/日历事件自动汇成「当天快照」；数据本地可导出</td></tr>
+  <tr><td><b>时间戳日记</b></td><td>日记 App</td><td>日历彩色圆点＋天视图左右滑动＋日/周/月统计；多种记录类型；一键生成长图分享</td></tr>
+</table>
+</div>
+
+<footer>
+  <b>使用说明：</b>这份文档只做参考，没有改动 <b>每日分支记录器.html</b> 的任何代码。
+  其中第 01 节的三条是互相咬合的一组，建议一起做；第 02、03 节可以按兴趣单点挑。
+  如果想动手，告我编号就行——每条都能落到具体的样式变量与函数上。
+</footer>
+
+</div>
+</body>
+</html>
