@@ -49,6 +49,7 @@
   --mask:rgba(15,23,42,.36);
   --toast-bg:#222a3d; --toast-fg:#ffffff;
   --danger-bg:#fdecea; --danger-fg:#c0392b;
+  --warn-bg:#fdf3e1; --warn-fg:#9a6500;
   --scroll-thumb:#cfd6e2; --scroll-thumb-hi:#bcc5d5;
   --topbar-grad:linear-gradient(to bottom,rgba(238,241,246,.96),rgba(238,241,246,.74) 62%,rgba(238,241,246,0));
   --glow:radial-gradient(760px 460px at 26% -6%,rgba(59,110,245,.10),transparent 70%),
@@ -81,6 +82,7 @@ body.dark{
   --mask:rgba(6,6,8,.72);
   --toast-bg:#232327; --toast-fg:#e9e9ec;
   --danger-bg:#3a1e1c; --danger-fg:#f0857d;
+  --warn-bg:#392d14; --warn-fg:#e6b055;
   --scroll-thumb:#2f2f35; --scroll-thumb-hi:#3d3d45;
   --topbar-grad:linear-gradient(to bottom,rgba(10,10,11,.94),rgba(10,10,11,.72) 62%,rgba(10,10,11,0));
   --glow:radial-gradient(760px 460px at 26% -6%,rgba(91,140,255,.07),transparent 70%),
@@ -472,6 +474,83 @@ svg{display:block}
 #ctx button.danger:hover{background:#3a1e1c;color:#f0857d}
 #ctx .sep{height:1px;background:var(--line);margin:4px 6px}
 
+/* ================= 学习线（把每天的事串成一条线） ================= */
+/* 卡片上的小标：待续 / 来自某天 / 线索名 */
+.nd-flag{
+  display:inline-flex;align-items:center;height:16px;padding:0 6px;border-radius:5px;
+  font-size:10.5px;line-height:1;white-space:nowrap;font-style:normal;font-weight:400;
+  background:var(--surface-2);color:var(--dim);border:1px solid var(--line);
+}
+.nd-flag.warn{background:var(--warn-bg);color:var(--warn-fg);border-color:transparent}
+.nd-head .nd-flag{margin-left:6px;flex-shrink:0}
+.nd-fold .nd-flag{margin-left:7px}
+.nd-sub .nd-flag{margin-right:7px}
+
+/* 「昨天还有没做完的，今天接着来？」提示条 */
+#carryBar{
+  position:fixed;left:50%;top:62px;z-index:46;
+  transform:translateX(-50%) translateY(-8px);opacity:0;pointer-events:none;
+  display:flex;align-items:center;gap:10px;padding:6px 7px 6px 14px;border-radius:12px;
+  background:var(--panel-bg);border:1px solid var(--line2);box-shadow:var(--panel-shadow);
+  font-size:12.5px;color:var(--dim);white-space:nowrap;
+  transition:opacity .18s,transform .18s var(--spring,cubic-bezier(.34,1.3,.5,1));
+}
+#carryBar.on{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+#carryBar .cb-do{
+  height:26px;padding:0 11px;border-radius:8px;font-size:12px;font-weight:500;
+  background:var(--blue);color:#fff;border:none;
+}
+#carryBar .cb-do:hover{filter:brightness(1.07)}
+#carryBar .cb-x{width:24px;height:24px;border-radius:7px;color:var(--mute);font-size:15px;line-height:1}
+#carryBar .cb-x:hover{background:var(--surface-3);color:var(--txt)}
+
+/* 学习线面板 */
+.ln-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.ln-tab{
+  display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:8px;
+  font-size:12px;color:var(--dim);border:1px solid var(--line);background:var(--surface-1);
+}
+.ln-tab i{width:7px;height:7px;border-radius:50%;background:var(--tc,var(--mute));flex-shrink:0}
+.ln-tab:hover{border-color:var(--line3)}
+.ln-tab.on{background:var(--blue-soft);border-color:var(--blue);color:var(--txt)}
+.ln-sum{
+  display:flex;gap:16px;align-items:baseline;flex-wrap:wrap;
+  padding:9px 12px;margin-bottom:15px;background:var(--surface-1);border-radius:10px;
+  font-size:12px;color:var(--mute);
+}
+.ln-sum b{color:var(--txt);font-size:15px;font-weight:500;margin-right:3px}
+.ln-day{margin-bottom:18px}
+.ln-dayh{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.ln-dayh .d{font-size:13px;font-weight:500;color:var(--txt)}
+.ln-dayh .w{font-size:11.5px;color:var(--mute)}
+.ln-dayh .m{margin-left:auto;font-size:11.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+.ln-rows{
+  display:flex;flex-direction:column;gap:6px;
+  padding-left:9px;border-left:1px solid var(--line2);
+}
+.ln-kids{
+  margin:6px 0 0 14px;display:flex;flex-direction:column;gap:6px;
+  padding-left:11px;border-left:1px dashed var(--line2);
+}
+.ln-card{
+  display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:9px;cursor:pointer;
+  background:var(--surface-1);border:1px solid var(--line);transition:border-color .13s,background .13s;
+}
+.ln-card:hover{border-color:var(--line3);background:var(--surface-3)}
+.ln-card .ln-bar{width:3px;align-self:stretch;border-radius:2px;flex-shrink:0;background:var(--mute)}
+.ln-card .ln-main{flex:1;min-width:0}
+.ln-card .ln-t{font-size:12.5px;color:var(--txt);display:flex;align-items:center;gap:6px}
+.ln-card .ln-star{color:var(--orange);font-size:11px;flex-shrink:0}
+.ln-card .ln-s{font-size:11.5px;color:var(--mute);margin-top:2px;font-variant-numeric:tabular-nums}
+.ln-card .ln-flags{display:flex;gap:5px;flex-shrink:0}
+.ln-empty{color:var(--mute);font-size:12.5px;line-height:1.7;padding:6px 0}
+.ln-thread{margin-bottom:20px}
+.ln-threadh{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;font-weight:500}
+.ln-threadh i{width:9px;height:9px;border-radius:50%;background:var(--tc);flex-shrink:0}
+.ln-threadh em{font-style:normal;font-size:11.5px;color:var(--mute);font-weight:400;margin-left:auto}
+.ln-sub{margin:0 0 11px 3px}
+.ln-subh{font-size:11.5px;color:var(--mute);margin-bottom:6px;font-variant-numeric:tabular-nums}
+
 /* ================= 窄屏 ================= */
 @media(max-width:900px){
   #topbar{height:50px;padding:0 10px;gap:6px}
@@ -488,6 +567,9 @@ svg{display:block}
   .search-wrap.on input{width:118px}
   .pill{padding:0 8px;font-size:11.5px}
   #canvasVoid{width:auto !important;max-width:92vw}
+  /* 承接提示条：窄屏放开换行，别顶出屏幕 */
+  #carryBar{top:56px;max-width:calc(100vw - 20px);white-space:normal;font-size:12px;align-items:flex-start}
+  .ln-dayh .m{font-size:11px}
 }
 /* =========================================================
    主题变量驱动层（放在最后，覆盖上面的深色硬编码色）
@@ -1115,6 +1197,7 @@ button,.pill,.bb,.tool,.ico-btn{touch-action:manipulation}
   </div>
 </div>
 <div id="glow"></div>
+<div id="carryBar"></div>
 
 <header id="topbar">
   <div class="tb-left">
@@ -1172,6 +1255,10 @@ button,.pill,.bb,.tool,.ico-btn{touch-action:manipulation}
   <button class="tool" data-t="stats" title="统计">
     <svg class="ico" viewBox="0 0 16 16"><path d="M3 13.2V9.4M6.3 13.2V5.2M9.7 13.2V8.2M13 13.2V6.6"/></svg>
     <span class="tl">统计</span>
+  </button>
+  <button class="tool" data-t="line" title="学习线 · 把每天的事串成一条线（回看进度、接着往下做）">
+    <svg class="ico" viewBox="0 0 16 16"><path d="M2.6 12.7 6 8.7l2.8 2.4 4.6-6.3"/><circle cx="6" cy="8.7" r="1.5"/><circle cx="8.8" cy="11.1" r="1.5"/></svg>
+    <span class="tl">学习线</span>
   </button>
   <div class="tool-sep"></div>
   <button class="tool" data-t="tidy" title="整理布局 · 点一下只推开重叠（保持你手工摆的位置）· 按住 Alt 点 = 彻底重排成树形 · 快捷键 Ctrl+Shift+L">
@@ -2445,11 +2532,16 @@ function nodeInner(n){
         + '<button class="nd-add" data-a="add" data-id="' + n.id + '">＋ 子分支</button>'
       + '</div>'
       + '<div class="nd-fold"><em>' + esc(one) + '</em>'
+        + (isPending(n) ? '<span class="nd-flag warn">待续</span>' : '')
+        + (n.carry && n.carry.from ? '<span class="nd-flag">来自 ' + esc(shortDate(n.carry.from)) + '</span>' : '')
         + (n.rating ? '<span class="nd-fold-r">' + '★'.repeat(n.rating) + '</span>' : '')
       + '</div>'
       + '<div class="nd-body">'
         + '<div class="nd-inner">'
-          + '<div class="nd-sub">' + esc(sub) + '</div>'
+          + '<div class="nd-sub">'
+            + (n.thread ? '<span class="nd-flag" style="color:' + threadColorOf(n.thread) + '">'
+                + esc(trunc(threadNameOf(n.thread), 12)) + '</span>' : '')
+            + esc(sub) + '</div>'
           + '<div class="nd-stars">' + stars + '<b>' + (n.rating ? n.rating + '/5' : '点星星打分') + '</b></div>'
           + (n.note && n.note.trim()
               ? '<div class="nd-note">' + esc(n.note) + '</div>'
@@ -2469,6 +2561,7 @@ function nodeInner(n){
   return '<div class="nd-head">'
       + '<span class="nd-badge" style="background:' + col + '"></span>'
       + '<span class="nd-name">' + esc(n.title) + '</span>'
+      + (isPending(n) ? '<span class="nd-flag warn">待续</span>' : '')
       + (kids.length ? '<span class="nd-kids">' + (n.collapsed ? '▸ ' : '') + kids.length + '</span>' : '')
     + '</div>' + card;
 }
@@ -2865,6 +2958,24 @@ function renderInspector(){
       + '<div class="sec"><h4>状态</h4><div class="chips" id="iStatus">'
         + STATUS.map(s => '<button class="chip' + (n.status===s?' on':'') + '" data-v="' + s + '">' + s + '</button>').join('')
       + '</div></div>'
+      + '<div class="sec"><h4>学习线</h4>'
+        + '<div class="chips" id="iThread">'
+          + '<button class="chip' + (!n.thread ? ' on' : '') + '" data-th="">不归线</button>'
+          + threadList().map(t => '<button class="chip' + (n.thread === t.id ? ' on' : '') + '" data-th="' + t.id
+              + '" style="--mute:' + t.color + '">' + esc(trunc(t.name, 10)) + '</button>').join('')
+        + '</div>'
+        + '<div class="quick" style="margin-top:9px">'
+          + '<button class="qbtn' + (n.pending ? ' on' : '') + '" id="iPend">'
+            + (n.pending ? '已标「待续」· 点一下取消' : '标为「待续」· 明天接着做') + '</button>'
+          + '<button class="qbtn" id="iNewTh">＋ 新线索</button>'
+        + '</div>'
+        + (n.carry && n.carry.from
+            ? '<div style="font-size:11.5px;color:var(--mute);margin-top:9px;line-height:1.6">这一条是从 <b>'
+              + esc(n.carry.from) + '</b> 承接过来的。'
+              + '<a data-carryfrom="' + esc(n.carry.from) + '" data-carryid="' + esc(n.carry.id || '') + '"'
+              + ' style="color:var(--blue);cursor:pointer;margin-left:5px">回原文看看</a></div>'
+            : '')
+      + '</div>'
       + '<div class="sec"><h4>完成度自评</h4><div style="display:flex;align-items:center">'
         + '<div class="stars" id="iRate">'
           + [1,2,3,4,5].map(i => '<span class="star' + (n.rating>=i?' on':'') + '" data-i="' + i + '">★</span>').join('')
@@ -2952,6 +3063,32 @@ function renderInspector(){
     if(n.parentId){ const pel = nodeEl(n.parentId); if(pel) patchCard(n.parentId); }
     drawMinimap();
   });
+  /* ---- 学习线：归线 / 标待续 / 回原文 ---- */
+  box.querySelectorAll('#iThread .chip[data-th]').forEach(c => c.onclick = () => {
+    setNodeThread(n.id, c.dataset.th);
+    pushHist(); render();
+    toast(c.dataset.th ? ('已归到「' + threadNameOf(c.dataset.th) + '」') : '已取消归线');
+  });
+  const newThBtn = document.getElementById('iNewTh');
+  if(newThBtn) newThBtn.onclick = () => lnAskThread(tid => {
+    if(tid) setNodeThread(n.id, tid);
+    pushHist(); render();
+    if(tid) toast('已归到「' + threadNameOf(tid) + '」');
+  });
+  const pendBtn = document.getElementById('iPend');
+  if(pendBtn) pendBtn.onclick = () => {
+    setPending(n.id, !n.pending);
+    pushHist(); render();
+    toast(n.pending ? '标了「待续」· 明天打开时会问你要不要带到今天' : '已取消「待续」');
+  };
+  const cfLink = box.querySelector('[data-carryfrom]');
+  if(cfLink) cfLink.onclick = () => {
+    const d = cfLink.dataset.carryfrom, cid = cfLink.dataset.carryid;
+    curDate = d; selId = cid || null;
+    render(); openView();
+    if(selId && byId(selId)) selectNode(selId, { center: true });
+    else toast('已跳到 ' + d);
+  };
   const stars = box.querySelectorAll('#iRate .star');
   stars.forEach(s => {
     s.onmouseenter = () => stars.forEach(x => x.classList.toggle('on', +x.dataset.i <= +s.dataset.i));
@@ -4120,8 +4257,8 @@ const PAL_CMDS = [
   { id:'theme', t:'切换浅色 / 深色主题', run:toggleTheme },
   { id:'bg', t:'背景设置', run:bgPanel },
   { id:'days', t:'记录列表 / 切换日期', run:dayPanel },
-  { id:'cal', t:'日历热力图', run:() => openCalendar() },
   { id:'timeline', t:'时间轴', run:timelinePanel },
+  { id:'line', t:'学习线（跨天回看 / 接着往下做）', run:linePanel },
   { id:'stats', t:'今日统计', run:statsPanel },
   { id:'export', t:'导出 Markdown / OPML / 长图 / JSON', run:exportPanel },
   { id:'cloud', t:'云同步 / 登录账号', run: cloudPanel },
@@ -4510,6 +4647,7 @@ function render(){
   drawMinimap();
   syncTools();
   syncKidHint();
+  syncCarryBar();
 }
 function updateDatePill(){
   const m = +curDate.slice(5,7), d = +curDate.slice(8,10);
@@ -4520,6 +4658,349 @@ function shiftDay(n){
   const d = new Date(curDate + 'T00:00:00');
   d.setDate(d.getDate() + n);
   curDate = fmtDate(d); selId = null; render(); openView();
+}
+
+/* =========================================================
+   学习线 · 把每天的事串成一条线
+   ---------------------------------------------------------
+   三样东西，各管一件事：
+   · 线索（node.thread）—— 一条跨天的学习主题，比如「学 Photoshop」。
+     归了线的卡片能在学习线面板里单独筛出来，一眼看出「这个知识点
+     从哪天学到哪天」。
+   · 待续（node.pending）—— 今天没做完、明天要接着做的标记。
+   · 承接（node.carry）  —— 第二天一键把昨天的待续项搬过来，
+     记下「从哪天的哪个节点来的」，点一下能跳回原文对上下文。
+
+   新字段一律「缺省不写」：没用这个功能的节点，存出来的 JSON 和以前
+   一模一样。节点指纹是按 JSON.stringify 算的，所以云同步的基线不会
+   因为加了这个功能就整片失效、把一整库数据重推一遍。
+   ========================================================= */
+const THREAD_COLORS = ['#3b6ef5','#12a150','#dd8a00','#7c4ddb','#e04a42','#0aa3b8','#c2551f','#8a6ad0'];
+let carryOff = false;   /* 本次会话点过「今天不带了」，就不再弹提示条 */
+let lnFilter = '';      /* '' 全部 / 'none' 未归线 / 线索 id */
+let lnGroup = 'day';    /* day 按天分段 / thread 按线索分段 */
+
+function threads(){
+  if(!store.threads || typeof store.threads !== 'object') store.threads = {};
+  return store.threads;
+}
+function threadList(){
+  const m = threads();
+  return Object.keys(m).map(id => ({
+    id: id,
+    name: (m[id] && m[id].name) || '未命名线索',
+    color: (m[id] && m[id].color) || THREAD_COLORS[0],
+    at: (m[id] && m[id].at) || 0
+  })).sort((a,b) => a.at - b.at);
+}
+function newThread(name){
+  const list = threadList();
+  const id = 't' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+  threads()[id] = {
+    name: String(name == null ? '' : name).trim() || ('线索 ' + (list.length + 1)),
+    color: THREAD_COLORS[list.length % THREAD_COLORS.length],
+    at: Date.now()
+  };
+  save();
+  return id;
+}
+function threadInfo(tid){ return (tid && threads()[tid]) || null; }
+function threadNameOf(tid){ const t = threadInfo(tid); return t ? t.name : ''; }
+function threadColorOf(tid){ const t = threadInfo(tid); return (t && t.color) || '#8a92a6'; }
+function setNodeThread(id, tid){
+  const n = byId(id); if(!n) return;
+  if(tid) n.thread = tid; else delete n.thread;   /* 删字段而不是留空串，指纹才稳 */
+  save();
+}
+function isPending(n){ return !!(n && n.pending); }
+function setPending(id, on){
+  const n = byId(id); if(!n) return;
+  if(on) n.pending = true; else delete n.pending;
+  save();
+}
+function pendingOf(dayKey){
+  const d = store.days[dayKey];
+  return d ? (d.nodes || []).filter(isPending) : [];
+}
+/* 往前找最近一个有记录的一天（中间的空白日子直接跳过） */
+function prevDayWithNodes(dayKey){
+  const keys = Object.keys(store.days)
+    .filter(k => k < dayKey && ((store.days[k].nodes || []).length)).sort();
+  return keys.length ? keys[keys.length - 1] : '';
+}
+function carriedNodes(dayKey){
+  const d = store.days[dayKey];
+  return d ? (d.nodes || []).filter(n => n.carry && n.carry.from) : [];
+}
+function shortDate(ds){ return ds ? ds.slice(5) : ''; }
+
+/* 把 fromDay 上的几个节点（连同它们的子树）搬到 toDay：
+   根节点标题加「承接：」并记下来源，父子关系保留，位置交给自动布局；
+   时间与评分清空 —— 那是今天新的一笔，昨天那份还留在昨天。 */
+function carryOver(fromDay, ids, toDay){
+  const src = store.days[fromDay];
+  if(!src) return 0;
+  const to = store.days[toDay] || (store.days[toDay] = { nodes: [], nextSeq: 1 });
+  if(!Array.isArray(to.nodes)) to.nodes = [];
+  const idmap = {};
+  let cnt = 0;
+  ids.forEach(sid => {
+    const root = (src.nodes || []).find(n => n.id === sid);
+    if(!root) return;
+    const sub = [root].concat(descendantsOf(sid, src.nodes || []));
+    sub.forEach(n => {
+      let cp;
+      try{ cp = JSON.parse(JSON.stringify(n)); }catch(e){ return; }
+      cp.id = uid();
+      idmap[n.id] = cp.id;
+      cp.parentId = (n.id === sid) ? null : (idmap[n.parentId] || null);
+      cp.x = null; cp.y = null;
+      delete cp.pending;          /* 昨天那条还留在昨天，今天这条是新的 */
+      delete cp.open;
+      cp.start = ''; cp.end = '';
+      cp.rating = 0;
+      if(n.id === sid){
+        cp.carry = { from: fromDay, id: n.id };
+        if(!/^承接[:：]/.test(String(cp.title || ''))) cp.title = '承接：' + (cp.title || '未命名');
+      } else {
+        delete cp.carry;
+      }
+      to.nodes.push(cp);
+      cnt++;
+    });
+  });
+  to.nextSeq = to.nodes.length + 1;
+  save();
+  return cnt;
+}
+
+/* ---------- 提示条：昨天还有没做完的 ---------- */
+function syncCarryBar(){
+  const bar = document.getElementById('carryBar');
+  if(!bar) return;
+  const hide = () => bar.classList.remove('on');
+  const today = fmtDate(new Date());
+  if(carryOff || curDate !== today) return hide();
+  const from = prevDayWithNodes(today);
+  if(!from) return hide();
+  const pend = pendingOf(from);
+  if(!pend.length) return hide();
+  const done = new Set(carriedNodes(today).map(n => n.carry && n.carry.id));
+  const left = pend.filter(n => !done.has(n.id));
+  if(!left.length) return hide();
+  bar.innerHTML = '<span>' + esc(shortDate(from)) + ' 还有 ' + left.length + ' 项标着「待续」，今天接着做？</span>'
+    + '<button class="cb-do" id="cbDo">带到今天</button>'
+    + '<button class="cb-x" id="cbX" title="今天不带了">×</button>';
+  bar.classList.add('on');
+  document.getElementById('cbDo').onclick = () => {
+    const cnt = carryOver(from, left.map(x => x.id), today);
+    if(!cnt){ toast('没能带过来，昨天的记录可能已经删了'); return; }
+    selId = null;
+    render(); openView();
+    toast('已把 ' + cnt + ' 项接到今天 · 补上今天的时间就行');
+  };
+  document.getElementById('cbX').onclick = () => { carryOff = true; hide(); };
+}
+
+/* ---------- 学习线面板 ---------- */
+function lnHit(n){
+  if(!lnFilter) return true;
+  if(lnFilter === 'none') return !n.thread;
+  return n.thread === lnFilter;
+}
+function lnDayKeys(){
+  return Object.keys(store.days).filter(k => (store.days[k].nodes || []).length).sort().reverse();
+}
+/* 一段时间的总长按「并集」算：父分支 07:30–11:30 里已经含了子分支
+   07:30–09:30，逐个相加会算出一天 25 小时这种假数。 */
+function unionMinutes(nodes){
+  const spans = [];
+  nodes.forEach(n => {
+    const a = toMin(n.start), b = toMin(n.end);
+    if(a != null && b != null){ let bb = b; if(bb < a) bb += 1440; spans.push([a, bb]); }
+  });
+  if(!spans.length) return 0;
+  spans.sort((x, y) => x[0] - y[0]);
+  let sum = 0, cs = spans[0][0], ce = spans[0][1];
+  for(let i = 1; i < spans.length; i++){
+    if(spans[i][0] <= ce) ce = Math.max(ce, spans[i][1]);
+    else { sum += ce - cs; cs = spans[i][0]; ce = spans[i][1]; }
+  }
+  return sum + (ce - cs);
+}
+function lnStats(){
+  let items = 0, mins = 0, pend = 0;
+  Object.keys(store.days).forEach(k => {
+    const hit = (store.days[k].nodes || []).filter(lnHit);
+    if(!hit.length) return;
+    items += hit.length;
+    mins += unionMinutes(hit);           /* 按天分别算，跨天的同一时段不该互相吞掉 */
+    pend += hit.filter(isPending).length;
+  });
+  return { days: lnDayKeys().length, items: items, mins: mins, pend: pend };
+}
+function lnCard(k, n){
+  const m = durMin(n);
+  const span = (n.start ? (n.start + (n.end ? '–' + n.end : '')) : '未填时间')
+             + (m != null ? ' · ' + fmtDur(m) : '');
+  const flags = [];
+  if(isPending(n)) flags.push('<span class="nd-flag warn">待续</span>');
+  if(n.carry && n.carry.from) flags.push('<span class="nd-flag">来自 ' + esc(shortDate(n.carry.from)) + '</span>');
+  const t = threadInfo(n.thread);
+  if(t) flags.push('<span class="nd-flag" style="color:' + t.color + '">' + esc(trunc(t.name, 10)) + '</span>');
+  return '<div class="ln-card" data-d="' + k + '" data-id="' + n.id + '">'
+    + '<span class="ln-bar" style="background:' + sc(n.status) + '"></span>'
+    + '<div class="ln-main">'
+      + '<div class="ln-t">' + esc(n.title)
+        + (n.rating ? '<span class="ln-star">' + '★'.repeat(n.rating) + '</span>' : '')
+      + '</div>'
+      + '<div class="ln-s">' + esc(span) + ' · ' + esc(n.status) + '</div>'
+    + '</div>'
+    + (flags.length ? '<div class="ln-flags">' + flags.join('') + '</div>' : '')
+  + '</div>';
+}
+/* 一天：先按开始时间排，再按树形缩进 —— 和画布上的从属关系对得上 */
+function lnDayBlock(k){
+  const all = (store.days[k].nodes || []);
+  const ns = all.filter(lnHit);
+  if(!ns.length) return '';
+  const ord = {}; all.forEach((n, i) => ord[n.id] = i);
+  const ids = new Set(ns.map(n => n.id));
+  const rank = n => { const v = toMin(n.start); return v == null ? Infinity : v; };
+  const sorted = ns.slice().sort((a, b) => {
+    const x = rank(a), y = rank(b);
+    if(x !== y) return x - y;
+    return (ord[a.id] || 0) - (ord[b.id] || 0);
+  });
+  const kidOf = pid => sorted.filter(n => n.parentId === pid);
+  const roots = sorted.filter(n => !n.parentId || !ids.has(n.parentId));
+  const mins = unionMinutes(ns);
+  const pend = ns.filter(isPending).length;
+  const today = fmtDate(new Date());
+  const row = (n, depth) => {
+    const kids = depth > 3 ? [] : kidOf(n.id);   /* 太深就不再往下铺，别把面板刷成一条瀑布 */
+    return lnCard(k, n)
+      + (kids.length ? '<div class="ln-kids">' + kids.map(m => row(m, depth + 1)).join('') + '</div>' : '');
+  };
+  return '<div class="ln-day">'
+    + '<div class="ln-dayh">'
+      + '<span class="d">' + (+k.slice(5,7)) + '月' + (+k.slice(8,10)) + '日</span>'
+      + '<span class="w">' + weekName(k) + (k === today ? ' · 今天' : '') + '</span>'
+      + '<span class="m">' + ns.length + ' 项' + (mins ? ' · ' + fmtDur(mins) : '')
+        + (pend ? ' · ' + pend + ' 待续' : '') + '</span>'
+    + '</div>'
+    + '<div class="ln-rows">' + roots.map(n => row(n, 0)).join('') + '</div>'
+  + '</div>';
+}
+/* 一条线索：一路按天铺下来，看的就是「这个主题从哪学到哪」 */
+function lnThreadBlock(t){
+  const hits = [];
+  Object.keys(store.days).sort().reverse().forEach(k => {
+    (store.days[k].nodes || []).forEach(n => { if(n.thread === t.id) hits.push({ k: k, n: n }); });
+  });
+  if(!hits.length) return '';
+  const days = [];
+  hits.forEach(h => { if(days.indexOf(h.k) === -1) days.push(h.k); });
+  const mins = days.reduce((acc, k) => acc + unionMinutes(hits.filter(h => h.k === k).map(h => h.n)), 0);
+  const pend = hits.filter(h => isPending(h.n)).length;
+  return '<div class="ln-thread">'
+    + '<div class="ln-threadh" style="--tc:' + t.color + '"><i></i>' + esc(t.name)
+      + '<em>' + days.length + ' 天 · ' + hits.length + ' 项'
+        + (mins ? ' · ' + fmtDur(mins) : '') + (pend ? ' · ' + pend + ' 待续' : '') + '</em>'
+    + '</div>'
+    + days.map(k => {
+        const list = hits.filter(h => h.k === k).map(h => h.n);
+        return '<div class="ln-sub">'
+          + '<div class="ln-subh">' + (+k.slice(5,7)) + '月' + (+k.slice(8,10)) + '日 '
+            + weekName(k) + ' · ' + list.length + ' 项</div>'
+          + '<div class="ln-rows">' + list.map(n => lnCard(k, n)).join('') + '</div>'
+        + '</div>';
+      }).join('')
+  + '</div>';
+}
+function linePanel(){
+  const tl = threadList();
+  const st = lnStats();
+  const keys = lnDayKeys();
+  const tabs = ['<button class="ln-tab' + (lnFilter === '' ? ' on' : '') + '" data-f="">全部</button>']
+    .concat(tl.map(t => '<button class="ln-tab' + (lnFilter === t.id ? ' on' : '')
+      + '" data-f="' + t.id + '" style="--tc:' + t.color + '"><i></i>' + esc(trunc(t.name, 8)) + '</button>'))
+    .concat(['<button class="ln-tab' + (lnFilter === 'none' ? ' on' : '') + '" data-f="none">未归线</button>']);
+
+  let body;
+  if(!keys.length){
+    body = '<div class="ln-empty">还没有任何记录。<br>先在画布上记下今天做了什么，这里就会长出一条线。</div>';
+  } else if(!st.items){
+    body = '<div class="ln-empty">这个筛选下没有内容。</div>';
+  } else if(lnGroup === 'thread'){
+    const blocks = tl.map(lnThreadBlock).filter(Boolean).join('');
+    body = blocks || '<div class="ln-empty">还没有卡片归到线索上。<br>选中一张卡片 → 详情面板 →「学习线」里给它选一条。</div>';
+  } else {
+    body = keys.map(lnDayBlock).filter(Boolean).join('');
+  }
+
+  openModal('<h3>学习线</h3>'
+    + '<p>每天的事按时间串成一条线。<b>标了「待续」的，第二天会出现「带到今天」，一键接上进度</b>；'
+      + '给卡片选一条线索，就能顺着这个主题一路看下去。点任意一行跳到那天。</p>'
+    + '<div class="ln-tabs">' + tabs.join('') + '</div>'
+    + '<div class="ln-sum">'
+      + '<span><b>' + st.days + '</b>天</span>'
+      + '<span><b>' + st.items + '</b>项</span>'
+      + (st.mins ? '<span><b>' + fmtDur(st.mins) + '</b></span>' : '')
+      + (st.pend ? '<span style="color:var(--warn-fg)"><b style="color:var(--warn-fg)">' + st.pend + '</b>项待续</span>' : '')
+      + '<span style="margin-left:auto;display:flex;gap:6px">'
+        + '<button class="btn sm" id="lnByDay">按天</button>'
+        + '<button class="btn sm" id="lnByTh">按线索</button>'
+        + '<button class="btn sm" id="lnNewTh">＋ 新线索</button>'
+      + '</span>'
+    + '</div>'
+    + body,
+    true);
+
+  document.getElementById('lnByDay').classList.toggle('on', lnGroup === 'day');
+  document.getElementById('lnByTh').classList.toggle('on', lnGroup === 'thread');
+
+  document.querySelectorAll('.ln-tab').forEach(b => b.onclick = () => {
+    lnFilter = b.dataset.f; linePanel();
+  });
+  document.getElementById('lnByDay').onclick = () => { lnGroup = 'day'; linePanel(); };
+  document.getElementById('lnByTh').onclick = () => { lnGroup = 'thread'; linePanel(); };
+  document.getElementById('lnNewTh').onclick = () => lnAskThread(tid => {
+    if(tid){ lnGroup = 'thread'; lnFilter = tid; }
+    linePanel();
+  });
+  /* 点一行 → 跳到那天的画布并选中它，接着就能编辑 / 传图 / 写笔记 */
+  document.querySelectorAll('.ln-card').forEach(c => c.onclick = () => {
+    const d = c.dataset.d, id = c.dataset.id;
+    closeModal();
+    curDate = d;
+    selId = null;
+    render();
+    openView();
+    selectNode(id, { center: true });
+    toast('已跳到 ' + shortDate(d) + ' 的这一条');
+  });
+}
+/* 新建线索的小表单（学习线面板与详情面板共用） */
+function lnAskThread(done){
+  openModal('<h3>新建一条线索</h3>'
+    + '<p>线索 = 一个跨天的学习主题，比如「学 Photoshop」「线性代数」。'
+    + '之后把卡片归到这条线上，就能顺着它一路往下看。</p>'
+    + '<div class="fld" style="margin-bottom:14px"><label>名字</label>'
+      + '<input id="lnThName" placeholder="比如：学 Photoshop" spellcheck="false"></div>'
+    + '<div class="modal-foot"><button class="btn" id="lnThCancel">取消</button>'
+      + '<button class="btn pri" id="lnThOk">创建</button></div>');
+  const inp = document.getElementById('lnThName');
+  if(inp) setTimeout(() => inp.focus(), 30);
+  document.getElementById('lnThCancel').onclick = () => { if(done) done(''); else closeModal(); };
+  document.getElementById('lnThOk').onclick = () => {
+    const id = newThread(inp ? inp.value : '');
+    if(done) done(id);
+    else { closeModal(); toast('已创建「' + threadNameOf(id) + '」'); }
+  };
+  if(inp) inp.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('lnThOk').click(); }
+  });
 }
 
 /* =========================================================
@@ -5380,6 +5861,7 @@ function bindUI(){
   });
   document.querySelector('[data-t="timeline"]').onclick = timelinePanel;
   document.querySelector('[data-t="stats"]').onclick = statsPanel;
+  document.querySelector('[data-t="line"]').onclick = linePanel;
   /* 整理布局分两档：点一下 = 只推开重叠（手工摆的位置保留）；
      按住 Alt 点 = 彻底重排成树形。默认温和，才敢随手按。 */
   document.querySelector('[data-t="tidy"]').onclick = e => autoArrange((e && e.altKey) ? 'full' : 'soft');

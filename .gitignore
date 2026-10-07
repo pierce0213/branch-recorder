@@ -26,3 +26,7 @@ online/
 
 # 云服务/发布的应用标记（工作区本地状态，含本机绝对路径）
 .wbapp_*.genie
+
+# 安卓安装包（分发用的二进制，不进仓库；由 .workbuddy/android/ 下的脚本生成）
+*.apk
+*.idsig
