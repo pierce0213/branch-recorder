@@ -399,6 +399,10 @@ svg{display:block}
 .chip.on[data-v="专注"]{background:var(--blue)} .chip.on[data-v="分心"]{background:var(--red)}
 .chip.on[data-v="休息"]{background:var(--green)} .chip.on[data-v="事务"]{background:var(--orange)}
 .chip.on[data-v="娱乐"]{background:var(--purple)} .chip.on[data-v="其他"]{background:#6b6b73}
+/* 线索小药丸把线索色放在 --mute 上（给左边的小圆点用）。选中时若只靠 .chip.on 的
+   白字而没有底色，浅色主题下就是白字白底——看着像没选中。这里补上底色。 */
+.chip.on[data-th]{background:var(--mute)}
+.chip.on[data-th=""]{background:#6b6b73}
 .stars{display:flex;gap:3px;align-items:center}
 .star{font-size:20px;color:#33333a;cursor:pointer;transition:.12s;line-height:1}
 .star:hover{transform:scale(1.15)}
@@ -550,6 +554,141 @@ svg{display:block}
 .ln-threadh em{font-style:normal;font-size:11.5px;color:var(--mute);font-weight:400;margin-left:auto}
 .ln-sub{margin:0 0 11px 3px}
 .ln-subh{font-size:11.5px;color:var(--mute);margin-bottom:6px;font-variant-numeric:tabular-nums}
+
+/* =========================================================
+   手机列表首页 —— 手机端不再照搬电脑版那块画布
+   ---------------------------------------------------------
+   为什么另起一套：无限画布在手机上要「拖 + 捏合 + 长按 + 瞄准小圆点」，
+   全是手指不擅长的事。所以手机端默认进「列表」：一列大卡片，点一下就改，
+   上下滑换天，层级用缩进表示。原来那块画布不删，退成「看树」页签，
+   想看整体结构、整理布局时切过去。
+   两版从此有意分叉：桌面版（测试版/）没有这套东西，改一处别顺手改另一处。
+
+   注意 #canvas 用的是 visibility:hidden 而不是 display:none ——
+   measure() 要量卡片真实宽度来算高度，量到 0 会把整棵树的位置算塌，
+   切回画布时卡片位置就全乱了。visibility:hidden 保住尺寸、又不绘制。
+   ========================================================= */
+#mHome{display:none}
+body.m-list #mHome{display:flex;flex-direction:column;position:fixed;inset:0;z-index:30;background:var(--bg)}
+body.m-list #canvas{visibility:hidden}
+body.m-list #edges *{animation-play-state:paused}
+body.m-list #glow,
+body.m-list #carryBar,
+body.m-list #kidHint,
+body.m-list #topbar,
+body.m-list #toolbar,
+body.m-list #bottombar,
+body.m-list #minimap,
+body.m-list #outline,
+body.m-list #dispPanel,
+body.m-list #lightbox{display:none}
+
+/* 顶栏：‹ 日期 › ＋ ⋯ —— 每个按钮都 ≥38px，手指够得着 */
+.m-top{
+  flex-shrink:0;display:flex;align-items:center;gap:6px;
+  padding:calc(env(safe-area-inset-top,0px) + 9px) 10px 9px;
+  background:var(--panel-bg);border-bottom:1px solid var(--line);
+  backdrop-filter:blur(12px);position:relative;z-index:2;
+}
+.m-ib{
+  width:38px;height:38px;flex-shrink:0;border-radius:11px;color:var(--dim);
+  display:flex;align-items:center;justify-content:center;font-size:19px;line-height:1;
+  transition:background .14s;
+}
+.m-ib:active{background:var(--card2)}
+.m-dt{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;background:none}
+.m-dt b{font-size:15.5px;font-weight:600;color:var(--txt);font-variant-numeric:tabular-nums}
+.m-dt span{font-size:11.5px;color:var(--mute)}
+.m-dt span.today{color:var(--blue)}
+
+/* 待续提示条 */
+#mCarry{display:none;margin:10px 12px 0;padding:10px 12px;border-radius:12px;
+  background:var(--warn-bg);color:var(--warn-fg);font-size:12.5px;align-items:center;gap:10px;line-height:1.5}
+#mCarry.on{display:flex}
+.m-cb{margin-left:auto;flex-shrink:0;font-size:12.5px;font-weight:600;color:#fff;
+  background:var(--orange);border-radius:9px;padding:8px 13px}
+.m-cx{flex-shrink:0;color:var(--warn-fg);opacity:.65;font-size:17px;width:26px;height:26px;line-height:1}
+
+/* 列表 */
+#mList{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:10px 12px 14px}
+.m-sum{font-size:11.5px;color:var(--mute);padding:2px 3px 9px;font-variant-numeric:tabular-nums}
+.m-row{
+  display:flex;align-items:flex-start;gap:10px;padding:12px;margin-bottom:8px;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--card-shadow);touch-action:pan-y;transition:border-color .14s, background .14s;
+}
+.m-row:active{background:var(--card2)}
+.m-row.sel{border-color:var(--blue)}
+.m-bar{width:3px;align-self:stretch;min-height:36px;border-radius:2px;flex-shrink:0}
+.m-main{flex:1;min-width:0}
+.m-t{font-size:14.5px;font-weight:600;color:var(--txt);line-height:1.45;word-break:break-word}
+.m-s{font-size:12px;color:var(--mute);margin-top:3px;font-variant-numeric:tabular-nums;line-height:1.6}
+.m-note{font-size:12.5px;color:var(--dim);margin-top:5px;line-height:1.6;word-break:break-word;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.m-flags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.m-flag{font-size:11px;border-radius:20px;padding:1.5px 9px;background:var(--card2);
+  border:1px solid var(--line);color:var(--dim);white-space:nowrap}
+.m-flag.warn{background:var(--warn-bg);color:var(--warn-fg);border-color:transparent}
+.m-kids{
+  flex-shrink:0;align-self:center;min-width:42px;padding:7px 8px;border-radius:10px;
+  border:1px solid var(--line);background:var(--card2);color:var(--dim);font-size:11.5px;
+  font-variant-numeric:tabular-nums;
+}
+.m-kids:active{border-color:var(--blue);color:var(--blue)}
+.m-add-row{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:14px;border:1px dashed var(--line2);border-radius:14px;color:var(--mute);font-size:13px;
+}
+.m-add-row:active{border-color:var(--blue);color:var(--blue)}
+.m-empty{padding:34px 18px;text-align:center;color:var(--mute);font-size:13px;line-height:2}
+.m-empty b{color:var(--dim);font-weight:600}
+
+/* 底部页签：今天 / 记录 / ＋ / 学习线 / 看树 */
+#mTabs{
+  flex-shrink:0;display:flex;align-items:center;gap:2px;
+  padding:6px 8px calc(env(safe-area-inset-bottom,0px) + 6px);
+  background:var(--panel-bg);border-top:1px solid var(--line);backdrop-filter:blur(12px);
+}
+.m-tab{
+  flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:7px 0;border-radius:11px;font-size:11.5px;color:var(--mute);transition:color .14s;
+}
+.m-tab .ico{width:20px;height:20px}
+.m-tab.on{color:var(--blue)}
+.m-tab:active{background:var(--card2)}
+.m-add{
+  flex:0 0 auto;width:58px;height:46px;margin:0 6px;border-radius:15px;background:var(--blue);
+  color:#fff;font-size:26px;font-weight:400;line-height:1;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px var(--blue-soft);
+}
+.m-add:active{opacity:.88}
+
+/* 弹出面板背后的遮罩：点空白处收起 */
+#mSheetMask{display:none}
+body.m-list #mSheetMask.on{display:block;position:fixed;inset:0;z-index:44;background:var(--mask)}
+
+/* 详情面板在列表模式下改成「底部弹出面板」：原来它是个贴右边的抽屉 */
+body.m-list #inspector{
+  left:0;right:0;bottom:0;top:auto;width:auto;max-height:84vh;
+  border-left:none;border-right:none;border-bottom:none;
+  border-radius:18px 18px 0 0;
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 4px);
+  animation:mSheet .2s ease-out;
+}
+body.m-list #inspector::before{
+  content:"";position:absolute;left:50%;top:7px;width:38px;height:4px;border-radius:3px;
+  background:var(--line3);transform:translateX(-50%);
+}
+body.m-list .insp-head{padding-top:20px}
+@keyframes mSheet{from{transform:translateY(14px);opacity:.55}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){ body.m-list #inspector{animation:none} }
+
+/* 更多面板（⋯）里的条目 */
+.m-mi{display:flex;align-items:center;gap:11px;width:100%;padding:13px 12px;border-radius:12px;
+  background:var(--card2);color:var(--txt);font-size:13.5px;text-align:left;margin-bottom:7px}
+.m-mi:active{background:var(--card)}
+.m-mi .ico{width:18px;height:18px;color:var(--dim);flex-shrink:0}
+.m-mi em{margin-left:auto;font-style:normal;font-size:11.5px;color:var(--mute)}
 
 /* ================= 窄屏 ================= */
 @media(max-width:900px){
@@ -1199,6 +1338,44 @@ button,.pill,.bb,.tool,.ico-btn{touch-action:manipulation}
 <div id="glow"></div>
 <div id="carryBar"></div>
 
+<!-- ===== 手机列表首页：手机端的默认界面（画布退成「看树」页签） =====
+     为什么不是画布：手机上拖画布、捏合缩放、瞄准卡片右缘的小圆点，全是
+     手指不擅长的事。这里把「今天」摊成一列大卡片，点一下就改，上下滑换天。
+     层级用缩进 + 折展表示，和画布上的从属关系一一对应。 -->
+<div id="mHome">
+  <div class="m-top">
+    <button class="m-ib" id="mPrev" title="前一天">‹</button>
+    <button class="m-dt" id="mDate" title="点一下选日期">
+      <b id="mDateTxt">—</b>
+      <span id="mWeekTxt">—</span>
+    </button>
+    <button class="m-ib" id="mNext" title="后一天">›</button>
+    <button class="m-ib" id="mMore" title="更多">⋯</button>
+  </div>
+  <div id="mCarry"></div>
+  <div id="mList"></div>
+  <nav id="mTabs">
+    <button class="m-tab on" data-mv="list">
+      <svg class="ico" viewBox="0 0 16 16"><path d="M2.6 4.2h1.3M2.6 8h1.3M2.6 11.8h1.3M6.2 4.2h7.2M6.2 8h7.2M6.2 11.8h4.6"/></svg>
+      今天
+    </button>
+    <button class="m-tab" data-mv="days">
+      <svg class="ico" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="10" rx="2"/><path d="M2.5 6.5h11M5.5 2.2v2.4M10.5 2.2v2.4"/></svg>
+      记录
+    </button>
+    <button class="m-add" id="mAdd" title="记一笔">＋</button>
+    <button class="m-tab" data-mv="line">
+      <svg class="ico" viewBox="0 0 16 16"><path d="M2.6 12.7 6 8.7l2.8 2.4 4.6-6.3"/><circle cx="6" cy="8.7" r="1.5"/><circle cx="8.8" cy="11.1" r="1.5"/></svg>
+      学习线
+    </button>
+    <button class="m-tab" data-mv="canvas">
+      <svg class="ico" viewBox="0 0 16 16"><circle cx="4" cy="8" r="1.9"/><circle cx="12" cy="4" r="1.9"/><circle cx="12" cy="12" r="1.9"/><path d="M5.6 7.2 10.4 4.8M5.6 8.8l4.8 2.4"/></svg>
+      看树
+    </button>
+  </nav>
+</div>
+<div id="mSheetMask"></div>
+
 <header id="topbar">
   <div class="tb-left">
     <span class="logo" title="每日分支记录器">
@@ -1772,6 +1949,9 @@ function lsSet(k, v){
 }
 function save(){
   if(!lsSet(KEY, JSON.stringify(store))) toast('保存失败：浏览器存储空间不足或被禁用');
+  /* 手机列表视图的兜底刷新：任何一条改动最终都会走到 save()（标题、状态那几处
+     是直接改 DOM 的，既不 render 也不 patchCard），挂在这里才不漏。 */
+  mRenderSoon();
 }
 function load(){
   try{
@@ -2816,6 +2996,7 @@ function patchCard(id){
   el.innerHTML = nodeInner(n);
   el.classList.toggle('sel', id === selId);
   reflowSoon();
+  mRenderSoon();   /* 底部面板里打字时走的是 patchCard，不至于漏刷列表 */
 }
 let reflowTm = null;
 function reflowSoon(){ clearTimeout(reflowTm); reflowTm = setTimeout(reflow, 110); }
@@ -2919,7 +3100,7 @@ function renderInspector(){
       + '<button class="ico-btn" id="iCloseEmpty" title="收起">' + ICO.del + '</button></div>'
       + '<div class="insp-empty">还没有选中任何分支。<br>点画布上的任意卡片开始记录，<br>或先<b>新建一条主线分支</b>。</div>'
       + '<div style="padding:0 14px 16px"><button class="btn pri" id="iNewRoot" style="width:100%;justify-content:center">＋ 新建主线分支</button></div>';
-    document.getElementById('iCloseEmpty').onclick = () => { inspOpen = false; syncInspBtn(); renderInspector(); };
+    document.getElementById('iCloseEmpty').onclick = () => { inspOpen = false; syncInspBtn(); renderInspector(); mSheetMask(false); };
     document.getElementById('iNewRoot').onclick = () => addBranch(null);
     return;
   }
@@ -3025,7 +3206,7 @@ function renderInspector(){
     if(el){ el.querySelector('.nd-title').textContent = n.title; el.querySelector('.nd-name').textContent = n.title; }
   });
   tEl.addEventListener('change', pushHist);
-  document.getElementById('iClose').onclick = () => { inspOpen = false; syncInspBtn(); renderInspector(); };
+  document.getElementById('iClose').onclick = () => { inspOpen = false; syncInspBtn(); renderInspector(); mSheetMask(false); };
   document.getElementById('iFold').onclick = () => {
     n.collapsed = !n.collapsed; save(); pushHist(); render();
   };
@@ -4648,6 +4829,7 @@ function render(){
   syncTools();
   syncKidHint();
   syncCarryBar();
+  mRenderSoon();   /* 手机列表视图：任何一次 render 都把列表跟着刷一遍 */
 }
 function updateDatePill(){
   const m = +curDate.slice(5,7), d = +curDate.slice(8,10);
@@ -5001,6 +5183,348 @@ function lnAskThread(done){
   if(inp) inp.addEventListener('keydown', e => {
     if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('lnThOk').click(); }
   });
+}
+
+/* =========================================================
+   手机列表首页 · 列表优先
+   ---------------------------------------------------------
+   只做三件事：把「今天」摊成一列、点一下能改、上下滑能换天。
+   面板一个都不重写 —— 编辑直接复用右侧那个 #inspector（列表模式下被 CSS
+   改成底部弹出面板），记录 / 学习线 / 统计 / 云同步全是现成的模态。
+   所以这里只有「渲染列表 + 路由」两件事。
+
+   为什么默认视图要分真机与桌面上打开的：
+   真机（手机 UA）默认进列表；桌面浏览器里打开手机版仍走画布，
+   这样那 78 项画布回归（捏合、拖端口、双击新建…）不受影响，
+   用户也能手动切（⋯ → 切到画布视图）。
+   ========================================================= */
+const MVIEW_KEY = KEY + '-mview';
+let mView = 'canvas';
+let mSw = null;          /* 按在列表上的起点，用来判左右滑 */
+let mNoClick = false;    /* 刚滑过一趟：吃掉紧跟着的那次 click */
+let mRTm = null;
+
+function mIsPhone(){
+  return /Android|iPhone|iPod|Windows Phone|Mobile/i.test(navigator.userAgent || '');
+}
+function mDefaultView(){
+  const saved = lsGet(MVIEW_KEY);
+  if(saved === 'list' || saved === 'canvas') return saved;
+  return mIsPhone() ? 'list' : 'canvas';
+}
+function mOn(){ return mView === 'list'; }
+/* 列表里任何一次改动都走这个（防抖）：render() 与 patchCard() 都挂它，
+   所以不管是底部面板改的、还是画布上改的，列表都会跟着刷新。
+   注意：mRender() 内部绝不能再调 render()，否则两者会互相触发成死循环。 */
+function mRenderSoon(){ if(!mOn()) return; clearTimeout(mRTm); mRTm = setTimeout(mRender, 60); }
+
+function mSetView(v, silent){
+  mView = (v === 'list') ? 'list' : 'canvas';
+  lsSet(MVIEW_KEY, mView);
+  document.body.classList.toggle('m-list', mView === 'list');
+  mSheetMask(false);
+  document.querySelectorAll('#mTabs .m-tab').forEach(b =>
+    b.classList.toggle('on', b.dataset.mv === mView && mView === 'list'));
+  if(mView === 'list'){
+    inspOpen = false; syncInspBtn(); renderInspector();
+    mRender();
+  } else {
+    render(); openView();
+  }
+  if(!silent) toast(mView === 'list' ? '已切到列表视图 · 上下滑换天' : '已切到画布视图 · 手指可以拖动画布');
+}
+function mSheetMask(on){
+  const el = document.getElementById('mSheetMask');
+  if(el) el.classList.toggle('on', !!on);
+}
+function mCloseEdit(){
+  inspOpen = false; syncInspBtn(); renderInspector();
+  mSheetMask(false);
+  mRender();
+}
+function mOpenEdit(id){
+  const n = byId(id); if(!n) return;
+  selId = id; inspOpen = true;
+  syncInspBtn();
+  renderInspector();
+  mSheetMask(true);
+  mRender();
+  /* 这里故意不调 renderNodes()：画布这会儿是藏着的，等切到「看树」时
+     mSetView 会走一遍 render()，选中态自然就补上了 */
+}
+
+/* ---------- 日期 ---------- */
+function mDayLabel(k){
+  const num = (+k.slice(5,7)) + '月' + (+k.slice(8,10)) + '日';
+  const today = fmtDate(new Date());
+  const d = new Date(today + 'T00:00:00'); d.setDate(d.getDate() - 1);
+  if(k === today) return { t: num, s: weekName(k) + ' · 今天', today: true };
+  if(k === fmtDate(d)) return { t: num, s: weekName(k) + ' · 昨天', today: false };
+  return { t: num, s: k.slice(0,4) + ' 年 · ' + weekName(k), today: false };
+}
+function mShiftDay(delta){
+  const d = new Date(curDate + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  curDate = fmtDate(d);
+  selId = null;
+  mCloseEdit();
+  render(); mRender();
+  /* 连着滑过好几个空白日子太烦：这一步落到空天，就再往前/往后找最近有记录的一天 */
+  const has = () => store.days[curDate] && (store.days[curDate].nodes || []).length;
+  if(!has()){
+    const keys = Object.keys(store.days)
+      .filter(k => k !== curDate && (store.days[k].nodes || []).length).sort();
+    const cand = delta < 0 ? keys.filter(k => k < curDate).pop() : keys.filter(k => k > curDate)[0];
+    if(cand){ curDate = cand; render(); mRender(); }
+  }
+  const list = document.getElementById('mList');
+  if(list) list.scrollTop = 0;
+}
+
+/* ---------- 列表 ---------- */
+/* 先按开始时间排、再按树形缩进 —— 和画布上的从属关系一一对应 */
+function mOrdered(){
+  const all = day().nodes;
+  const ids = new Set(all.map(n => n.id));
+  const out = [];
+  const walk = (n, d) => {
+    out.push({ n: n, d: d });
+    if(n.collapsed || d >= 5) return;
+    sortSibs(childrenOf(n.id, all)).forEach(k => walk(k, d + 1));
+  };
+  sortSibs(all.filter(n => !n.parentId || !ids.has(n.parentId))).forEach(n => walk(n, 0));
+  return out;
+}
+function mRowHTML(it){
+  const n = it.n;
+  const col = branchColor(n.id);
+  const m = durMin(n);
+  const meta = [n.start ? (n.start + (n.end ? '–' + n.end : '')) : '未填时间'];
+  if(m != null) meta.push(fmtDur(m));
+  meta.push(n.status);
+  if(n.rating) meta.push('★'.repeat(n.rating));
+  const kids = childrenOf(n.id);
+  const sub = kids.length ? descendantsOf(n.id).length : 0;
+  const flags = [];
+  if(isPending(n)) flags.push('<span class="m-flag warn">待续</span>');
+  if(n.carry && n.carry.from) flags.push('<span class="m-flag">来自 ' + esc(shortDate(n.carry.from)) + '</span>');
+  const th = threadInfo(n.thread);
+  if(th) flags.push('<span class="m-flag" style="color:' + th.color + '">' + esc(trunc(th.name, 12)) + '</span>');
+  return '<div class="m-row' + (n.id === selId ? ' sel' : '') + '" data-id="' + n.id + '"'
+      + ' style="margin-left:' + (it.d * 16) + 'px">'
+    + '<span class="m-bar" style="background:' + col + '"></span>'
+    + '<div class="m-main">'
+      + '<div class="m-t">' + esc(n.title) + '</div>'
+      + '<div class="m-s">' + esc(meta.join(' · ')) + '</div>'
+      + (n.note ? '<div class="m-note">' + esc(n.note) + '</div>' : '')
+      + (flags.length ? '<div class="m-flags">' + flags.join('') + '</div>' : '')
+    + '</div>'
+    + (kids.length
+        ? '<button class="m-kids" data-fold="' + n.id + '">' + (n.collapsed ? '▸ ' : '▾ ') + sub + '</button>'
+        : '')
+  + '</div>';
+}
+function mRender(){
+  if(!mOn()) return;
+  const list = document.getElementById('mList');
+  if(!list) return;
+  const lab = mDayLabel(curDate);
+  document.getElementById('mDateTxt').textContent = lab.t;
+  const wk = document.getElementById('mWeekTxt');
+  wk.textContent = lab.s;
+  wk.classList.toggle('today', lab.today);
+
+  const items = mOrdered();
+  const all = day().nodes;
+  const mins = all.length ? unionMinutes(all) : 0;   /* 父子重叠只算一次 */
+  const pend = all.filter(isPending).length;
+  const sum = items.length
+    ? items.length + ' 项' + (mins ? ' · ' + fmtDur(mins) : '') + (pend ? ' · ' + pend + ' 待续' : '')
+    : '';
+
+  list.innerHTML = (sum ? '<div class="m-sum">' + sum + '</div>' : '')
+    + (items.length
+        ? items.map(mRowHTML).join('')
+        : '<div class="m-empty">这天还没有记录。<br>点下面的 <b>＋</b> 记一笔；'
+          + '想看整棵树的形状，点 <b>看树</b> 切到画布。</div>')
+    + '<button class="m-add-row" id="mAddRow">＋　' + (items.length ? '再记一笔' : '记一笔') + '</button>';
+
+  document.getElementById('mAddRow').onclick = mAddPanel;
+  list.querySelectorAll('.m-kids').forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const n = byId(b.dataset.fold); if(!n) return;
+    n.collapsed = !n.collapsed;
+    save(); pushHist();
+    render();   /* 画布也要跟着折/展；它会顺手把列表刷新回去（防抖），不会递归 */
+  });
+  list.querySelectorAll('.m-row').forEach(r => r.onclick = () => {
+    if(mNoClick) return;
+    mOpenEdit(r.dataset.id);
+  });
+  mCarryBar();
+}
+
+/* ---------- 昨天的「待续」：列表版提示条 ---------- */
+function mCarryBar(){
+  const el = document.getElementById('mCarry'); if(!el) return;
+  const today = fmtDate(new Date());
+  let from = '', pend = [];
+  if(curDate === today){
+    from = prevDayWithNodes(today);
+    if(from) pend = pendingOf(from);
+  }
+  const done = carriedNodes(today);
+  const left = pend.filter(n => !done.some(c => c.carry && c.carry.id === n.id));
+  if(!from || !left.length || carryOff){
+    el.classList.remove('on'); el.innerHTML = ''; return;
+  }
+  el.innerHTML = '<span>' + esc(shortDate(from)) + ' 还有 ' + left.length + ' 项标着「待续」</span>'
+    + '<button class="m-cb" id="mCarryDo">带到今天</button>'
+    + '<button class="m-cx" id="mCarryX" title="今天不带了">×</button>';
+  el.classList.add('on');
+  document.getElementById('mCarryDo').onclick = () => {
+    const cnt = carryOver(from, left.map(x => x.id), today);
+    if(!cnt){ toast('没能带过来，昨天的记录可能已经删了'); return; }
+    selId = null;
+    pushHist(); render(); mRender();
+    toast('已把 ' + cnt + ' 项接到今天 · 补上今天的时间就行');
+  };
+  document.getElementById('mCarryX').onclick = () => { carryOff = true; el.classList.remove('on'); el.innerHTML = ''; };
+}
+
+/* ---------- ＋ 记一笔 ---------- */
+function mAddPanel(){
+  const all = day().nodes;
+  const ids = new Set(all.map(n => n.id));
+  const opts = [];
+  const walk = (n, d) => {
+    opts.push('<option value="' + n.id + '">' + esc('　'.repeat(d) + (d ? '└ ' : '') + trunc(n.title, 20)) + '</option>');
+    if(d >= 4) return;
+    sortSibs(childrenOf(n.id, all)).forEach(k => walk(k, d + 1));
+  };
+  sortSibs(all.filter(n => !n.parentId || !ids.has(n.parentId))).forEach(n => walk(n, 0));
+
+  const today = fmtDate(new Date());
+  const from = (curDate === today) ? prevDayWithNodes(curDate) : '';
+  const pend = from ? pendingOf(from) : [];
+
+  openModal('<h3>记一笔 · ' + (+curDate.slice(5,7)) + '月' + (+curDate.slice(8,10)) + '日</h3>'
+    + '<p>写今天做了什么。<b>默认记成一整条主线</b>；也可以挑一条挂到它下面当子分支——'
+      + '层级深一点没关系，列表里会缩进排出来。</p>'
+    + '<div class="fld" style="margin-bottom:12px"><label>做了什么</label>'
+      + '<input id="mA_title" placeholder="比如：学 Photoshop 的图层蒙版" spellcheck="false" '
+        + 'autocomplete="off" enterkeyhint="done"></div>'
+    + '<div class="fld" style="margin-bottom:12px"><label>挂在哪</label>'
+      + '<select id="mA_pid"><option value="">不挂 · 记成一整条主线</option>' + opts.join('') + '</select></div>'
+    + (pend.length
+        ? '<div style="font-size:12px;color:var(--mute);line-height:1.7;margin-bottom:10px">'
+          + '昨天还有 ' + pend.length + ' 项标着「待续」：'
+          + pend.slice(0, 3).map(x => '<button class="qbtn" data-take="' + x.id + '" style="margin:4px 4px 0 0">接着做「'
+              + esc(trunc(x.title, 12)) + '」</button>').join('') + '</div>'
+        : '')
+    + '<div class="modal-foot"><button class="btn" id="mA_cancel">取消</button>'
+      + '<button class="btn pri" id="mA_ok">添加</button></div>', true);
+
+  const ti = document.getElementById('mA_title');
+  if(ti) setTimeout(() => ti.focus(), 60);
+  document.getElementById('mA_cancel').onclick = closeModal;
+  document.getElementById('mA_ok').onclick = () => {
+    const t = (ti && ti.value || '').trim();
+    const sel = document.getElementById('mA_pid');
+    const pid = (sel && sel.value) || null;
+    const n = addNode(pid, t || undefined);
+    pushHist(); closeModal();
+    selId = null; render(); mRender();
+    mOpenEdit(n.id);
+    toast(pid ? '加了一条子分支 · 补上时间和状态' : '加了一条主线 · 补上时间和状态');
+  };
+  document.querySelectorAll('#modal [data-take]').forEach(b => b.onclick = () => {
+    const cnt = carryOver(from, [b.dataset.take], curDate);
+    closeModal();
+    selId = null; pushHist(); render();
+    if(!cnt){ toast('没能接过来'); return; }
+    const got = (day().nodes || []).filter(n => n.carry && n.carry.from === from).pop();
+    if(got) mOpenEdit(got.id); else mRender();
+    toast('已接到今天 · 补上今天的时间');
+  });
+  if(ti) ti.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('mA_ok').click(); }
+  });
+}
+
+/* ---------- ⋯ 更多 ---------- */
+function mMorePanel(){
+  const acc = (typeof cloudUser !== 'undefined' && cloudUser && cloudUser.email) ? cloudUser.email : '未登录';
+  const rows = [
+    ['云同步 · 电脑和手机一个账号', acc, () => cloudPanel()],
+    ['换主题（浅色 / 深色）', isDark() ? '当前深色' : '当前浅色',
+      () => { toggleTheme(); mRender(); closeModal(); }],
+    ['背景 / 底色', '', () => bgPanel()],
+    ['统计', '', () => statsPanel()],
+    ['时间轴', '', () => timelinePanel()],
+    ['大纲视图', '', () => {
+      closeModal();
+      /* 大纲是画布上的东西，列表模式下它被 CSS 藏了：先切回去再开 */
+      if(mOn()) mSetView('canvas', true);
+      openOutline(true);
+    }],
+    ['整理布局（推开重叠）', '', () => { autoArrange('soft'); closeModal(); }],
+    ['全屏', '', () => {
+      closeModal();
+      if(document.fullscreenElement) document.exitFullscreen();
+      else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => toast('当前环境不支持全屏'));
+    }],
+    ['安装到手机主屏', '', () => { closeModal(); doInstall(); }],
+    ['切到画布视图（看树）', '', () => { closeModal(); mSetView('canvas'); }]
+  ];
+  openModal('<h3>更多</h3>'
+    + '<p>手机端默认是<b>列表</b>：一列大卡片，点一下就改，上下滑换天。'
+      + '想看整棵树的形状、或者调整卡片位置时，再切到<b>画布</b>。</p>'
+    + rows.map((r, i) => '<button class="m-mi" data-mi="' + i + '">' + esc(r[0])
+        + (r[1] ? '<em>' + esc(r[1]) + '</em>' : '') + '</button>').join('')
+    + '<div class="modal-foot"><button class="btn" id="mMoreClose">关闭</button></div>', true);
+  document.getElementById('mMoreClose').onclick = closeModal;
+  document.querySelectorAll('#modal [data-mi]').forEach(b => b.onclick = () => {
+    const r = rows[+b.dataset.mi];
+    if(r && typeof r[2] === 'function') r[2]();
+  });
+}
+
+/* ---------- 绑定 ---------- */
+function bindMobileHome(){
+  const $ = id => document.getElementById(id);
+  if(!$('mHome')) return;
+  $('mPrev').onclick = () => mShiftDay(-1);
+  $('mNext').onclick = () => mShiftDay(1);
+  $('mDate').onclick = () => openDatePop();   /* 复用现成的日历弹层 */
+  $('mMore').onclick = mMorePanel;
+  $('mAdd').onclick = mAddPanel;
+  $('mSheetMask').onclick = mCloseEdit;
+  document.querySelectorAll('#mTabs .m-tab').forEach(b => b.onclick = () => {
+    const v = b.dataset.mv;
+    if(v === 'days'){ dayPanel(); return; }
+    if(v === 'line'){ linePanel(); return; }
+    if(v === 'canvas'){ mSetView('canvas'); return; }
+    mSetView('list');
+  });
+  /* 列表上左右滑换天。滑完要吃掉紧跟着的那一次 click，
+     否则「滑一下」会顺手把经过的那张卡片的面板打开。 */
+  const list = $('mList');
+  list.addEventListener('pointerdown', e => { mSw = { x: e.clientX, y: e.clientY }; });
+  list.addEventListener('pointerup', e => {
+    const s = mSw; mSw = null;
+    if(!s) return;
+    const dx = e.clientX - s.x, dy = e.clientY - s.y;
+    if(Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5){
+      mNoClick = true;
+      setTimeout(() => { mNoClick = false; }, 400);
+      mShiftDay(dx < 0 ? 1 : -1);
+    }
+  });
+}
+function mBoot(){
+  bindMobileHome();
+  mSetView(mDefaultView(), true);
 }
 
 /* =========================================================
@@ -5795,15 +6319,24 @@ function boot(){
   openView();      /* 别一上来就把整棵树缩到 40%：文字会糊得看不清 */
   syncInspBtn();
   bindUI();
+  mBoot();          /* 手机版：决定进列表还是画布（真机默认列表），并绑好列表交互 */
   drawMinimap();
   initPWA();
   /* 主屏图标长按的快捷入口（见 manifest.shortcuts）：
-     ?go=outline 直达大纲，?go=days 直达记录列表 */
+     ?go=outline 直达大纲，?go=days 直达记录列表，?go=list 直达列表 */
   const go = new URLSearchParams(location.search).get('go');
-  if(go === 'outline') openOutline(true);
+  if(go === 'outline'){
+    /* 大纲面板在列表模式下是藏起来的：先切回画布，不然点了只看到空屏 */
+    if(mOn()) mSetView('canvas', true);
+    openOutline(true);
+  }
   else if(go === 'days') dayPanel();
+  else if(go === 'list') mSetView('list');
+  else if(go === 'new'){ mSetView('list', true); mAddPanel(); }
   const hasAny = Object.keys(store.days).some(k => store.days[k].nodes && store.days[k].nodes.length);
-  if(!hasAny && !lsGet(KEY + '-seeded')){
+  /* 带着 ?go= 进来（主屏图标长按的快捷方式）时不弹欢迎层：
+     两层弹层会互相盖掉，用户点了「记一笔」却看到欢迎页，很莫名。 */
+  if(!hasAny && !lsGet(KEY + '-seeded') && !go){
     openModal(welcomeHTML());
     document.getElementById('doSeed').onclick = () => {
       closeModal(); lsSet(KEY + '-seeded','1');
@@ -5949,8 +6482,10 @@ function bindUI(){
   addEventListener('resize', () => {
     /* 宽屏拖窄：340px 的详情面板会盖住大半画布（窄屏版式还把它变成底部抽屉），
        必须自动收起，别让用户在缩小的窗口里对着一个盖住画布的面板找关闭按钮。
-       这一步放在防抖之外——面板挡屏不能等 160ms。 */
-    if(isNarrow() && inspOpen){ inspOpen = false; syncInspBtn(); renderInspector(); }
+       这一步放在防抖之外——面板挡屏不能等 160ms。
+       列表模式例外：那里的面板是「点一行弹出来的底部面板」，
+       手机软键盘一起来就会触发 resize，跟着收起的话，用户一打字面板就没了。 */
+    if(!mOn() && isNarrow() && inspOpen){ inspOpen = false; syncInspBtn(); renderInspector(); }
     clearTimeout(window._rzTm);
     window._rzTm = setTimeout(() => { reflow(); drawMinimap(); }, 160);
   });
@@ -6052,6 +6587,11 @@ function seed(){
 }
 function welcomeHTML(){
   return '<h3>欢迎使用每日分支记录器</h3>'
+  + '<p><b>手机端默认是「列表」</b>：一天记的东西排成一列大卡片，点一下就改，上下滑换天，'
+  + '点子项左边的 <b>▾</b> 折展层级。记完一天想看看整棵树长什么样、或者调整卡片位置，'
+  + '点底部的 <b>看树</b> 切到画布；切回来点 <b>今天</b>。</p>'
+  + '<p>手机上还多了两件事：连不上网也能记，以及<b>装到桌面当一个 App 用</b>（⋯ 里有入口）。</p>'
+  + '<p style="margin-top:14px"><b>画布那套的用法</b>（想用「看树」时看这段）：</p>'
   + '<p>一块无限画布，记录你一天的学习与生活。<b>每条主线是一个分支，任何分支都能再长出子分支</b>，层级不限——'
   + '上午 → 数学 → 错题复盘 → 第 12 题，随便拆多深。</p>'
   + '<p>'

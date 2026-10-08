@@ -383,6 +383,10 @@ svg{display:block}
 .chip.on[data-v="专注"]{background:var(--blue)} .chip.on[data-v="分心"]{background:var(--red)}
 .chip.on[data-v="休息"]{background:var(--green)} .chip.on[data-v="事务"]{background:var(--orange)}
 .chip.on[data-v="娱乐"]{background:var(--purple)} .chip.on[data-v="其他"]{background:#6b6b73}
+/* 线索小药丸把线索色放在 --mute 上（给左边的小圆点用）。选中时若只靠 .chip.on 的
+   白字而没有底色，浅色主题下就是白字白底——看着像没选中。这里补上底色。 */
+.chip.on[data-th]{background:var(--mute)}
+.chip.on[data-th=""]{background:#6b6b73}
 .stars{display:flex;gap:3px;align-items:center}
 .star{font-size:20px;color:#33333a;cursor:pointer;transition:.12s;line-height:1}
 .star:hover{transform:scale(1.15)}

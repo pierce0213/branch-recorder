@@ -20,6 +20,8 @@
     { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
+    { "name": "记一笔", "short_name": "记一笔", "url": "./?go=new" },
+    { "name": "今天的记录", "short_name": "今天", "url": "./?go=list" },
     { "name": "记录列表", "short_name": "列表", "url": "./?go=days" },
     { "name": "今天的大纲", "short_name": "大纲", "url": "./?go=outline" }
   ]
